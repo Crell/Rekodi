@@ -7,10 +7,18 @@ namespace Crell\Rekodi;
 class Populator
 {
 
+    /**
+     *
+     *
+     * @param string $class
+     * @param array $data
+     * @return object|PopulatorErrors
+     *   The instantiated object, or an instance of the PopulatorErrors enum.
+     */
     public function populate(string $class, array $data): object
     {
         if (!class_exists($class)) {
-            return PopulatorErrors::ClassNotFound();
+            return PopulatorErrors::ClassNotFound;
         }
 
         /*
@@ -24,9 +32,9 @@ class Populator
         try {
             return new $class(...$data);
         } catch (\ArgumentCountError $e) {
-            return PopulatorErrors::WrongArgumentCount();
+            return PopulatorErrors::WrongArgumentCount;
         } catch (\Error $e) {
-            return PopulatorErrors::Other();
+            return PopulatorErrors::Other;
         }
 
     }

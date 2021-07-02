@@ -37,17 +37,17 @@ class PopulatorTest extends TestCase
         yield [
             'class' => DoesNotExist::class,
             'data' => ['x' => 1, 'y' => 2, 'z' => 3],
-            'error' => PopulatorErrors::ClassNotFound(),
+            'error' => PopulatorErrors::ClassNotFound,
         ];
         yield [
             'class' => Point::class,
             'data' => ['x' => 1, 'z' => 3],
-            'error' => PopulatorErrors::WrongArgumentCount(),
+            'error' => PopulatorErrors::WrongArgumentCount,
         ];
         yield [
             'class' => Point::class,
             'data' => ['a' => 5, 'x' => 1, 'z' => 3],
-            'error' => PopulatorErrors::Other(),
+            'error' => PopulatorErrors::Other,
         ];
     }
 

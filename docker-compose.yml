@@ -1,6 +1,14 @@
+# Run "docker-compose run php8" to execute the php8 container to run tests.
+
+# To use:
+# Run "docker-compose build" to rebuild the app container.
+# Run "docker-compose run php8" to run the test script.
+# I hate Docker.
+
 version: "3"
 services:
   php8:
     build: .
+#    image: rekodi
     volumes:
       - .:/usr/src/myapp

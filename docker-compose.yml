@@ -1,14 +1,21 @@
-# Run "docker-compose run php8" to execute the php8 container to run tests.
-
 # To use:
 # Run "docker-compose build" to rebuild the app container.
 # Run "docker-compose run php8" to run the test script.
-# I hate Docker.
+# RUn "docker-compose down -v" to fully wipe everything and start over.
 
 version: "3"
 services:
-  php8:
-    build: .
-#    image: rekodi
-    volumes:
-      - .:/usr/src/myapp
+    php8:
+        build: .
+        volumes:
+            - .:/usr/src/myapp
+        depends_on:
+            -   db
+    db:
+        image: mariadb
+        restart: always
+        environment:
+            MYSQL_ROOT_PASSWORD: test
+            MYSQL_DATABASE: rekodi
+        ports:
+            - 3306:3306

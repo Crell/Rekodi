@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
-use \PHPUnit\Framework\TestCase;
-use Crell\Rekodi\Records\Point;
 use Crell\Rekodi\Records\OptionalPoint;
+use Crell\Rekodi\Records\Point;
+use PHPUnit\Framework\TestCase;
 
 class PopulatorTest extends TestCase
 {

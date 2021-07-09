@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 namespace Crell\Rekodi\Records;
-use Crell\Rekodi\Table;
 use Crell\Rekodi\Field;
+use Crell\Rekodi\Table;
 
 #[Table(name: 'MyPoints')]
 class Point

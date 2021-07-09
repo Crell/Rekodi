@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
-use \Attribute;
+use Attribute;
 
 #[Attribute(Attribute::TARGET_CLASS)]
 class Table

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
-use Doctrine\DBAL\Connection;
-use \PHPUnit\Framework\TestCase;
+use Crell\Rekodi\Records\OptionalPoint;
 use Crell\Rekodi\Records\Point;
+use Doctrine\DBAL\Connection;
+use PHPUnit\Framework\TestCase;
 
 class SchemaCreatorTest extends TestCase
 {
@@ -42,12 +43,15 @@ class SchemaCreatorTest extends TestCase
             if (isset($def['type'])) {
                 self::assertEquals($def['type'], $columns[$columnName]->getType()->getName());
             }
+            if (isset($def['default'])) {
+                self::assertEquals($def['default'], $columns[$columnName]->getDefault());
+            }
         }
     }
 
     public function tableCreationProvider(): iterable
     {
-        yield [
+        yield Point::class => [
             'class' => Point::class,
             'table' => 'MyPoints',
             'expectedColumns' => [
@@ -62,6 +66,23 @@ class SchemaCreatorTest extends TestCase
                 ]
             ],
         ];
+        yield OptionalPoint::class => [
+            'class' => OptionalPoint::class,
+            'table' => 'OptionalPoint',
+            'expectedColumns' => [
+                'x' => [
+                    'type' => 'integer',
+                    'default' => 0,
+                ],
+                'y' => [
+                    'type' => 'integer',
+                    'default' => 0,
+                ],
+                'z' => [
+                    'type' => 'integer',
+                    'default' => 0,
+                ]
+            ],
+        ];
     }
-
 }

@@ -22,25 +22,46 @@ class SchemaCreatorTest extends TestCase
 
     /**
      * @test
+     * @dataProvider tableCreationProvider
      */
-    public function stuff(): void
+    public function can_create_tables_from_classes(string $class, string $tableName, array $expectedColumns): void
     {
         $conn = $this->getConnection();
 
         $subject = new SchemaCreator($conn);
-        $table = $subject->createSchemaDefinition(Point::class);
+        $table = $subject->createSchemaDefinition($class);
 
         $schemaManager = $conn ->createSchemaManager();
         $schemaManager->createTable($table);
 
-        $columns = $schemaManager->listTableColumns('MyPoints');
+        self::assertTrue($schemaManager->tablesExist($tableName));
 
-        self::assertTrue($schemaManager->tablesExist('MyPoints'));
-        self::assertArrayHasKey('x', $columns);
-        self::assertArrayHasKey('y_axis', $columns);
-        self::assertArrayHasKey('z', $columns);
-        self::assertEquals('integer', $columns['x']->getType()->getName());
+        $columns = $schemaManager->listTableColumns($tableName);
+        foreach ($expectedColumns as $columnName => $def) {
+            self::assertArrayHasKey($columnName, $columns);
+            if (isset($def['type'])) {
+                self::assertEquals($def['type'], $columns[$columnName]->getType()->getName());
+            }
+        }
     }
 
+    public function tableCreationProvider(): iterable
+    {
+        yield [
+            'class' => Point::class,
+            'table' => 'MyPoints',
+            'expectedColumns' => [
+                'x' => [
+                    'type' => 'integer',
+                ],
+                'y_axis' => [
+                    'type' => 'integer',
+                ],
+                'z' => [
+                    'type' => 'integer',
+                ]
+            ],
+        ];
+    }
 
 }

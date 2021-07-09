@@ -40,9 +40,7 @@ class SchemaCreator
 
     protected function baseClassName(string $className): string
     {
-        $pos = strrpos($className, '\\');
-
-        return substr($className, $pos + 1);
+        return substr($className, strrpos($className, '\\') + 1);
     }
 
     protected function getAttribute(\Reflector $target, string $name): ?object

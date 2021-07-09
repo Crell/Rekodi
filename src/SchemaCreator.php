@@ -24,18 +24,19 @@ class SchemaCreator
         $table = $schema->createTable($tableName);
 
         $rProperties = $rClass->getProperties();
-        foreach ($rProperties as $property) {
-            $fieldDefinition = $this->getAttribute($property, Field::class) ?? new Field();
-            $fieldDefinition->setProperty($property);
-            if ($fieldDefinition->skip) {
-                continue;
-            }
-
-            $table->addColumn($fieldDefinition->field, $fieldDefinition->type, $fieldDefinition->options());
-        }
+        // @todo Convert to first-class-callables when those are merged.
+        $definitions = array_map([$this, 'getDefinition'], $rProperties);
+        $definitions = array_filter($definitions, fn(Field $f): bool => !$f->skip);
+        array_map(fn(Field $f) => $table->addColumn($f->field, $f->type, $f->options()), $definitions);
 
         return $table;
+    }
 
+    protected function getDefinition(\ReflectionProperty $property): Field
+    {
+        $fieldDefinition = $this->getAttribute($property, Field::class) ?? new Field();
+        $fieldDefinition->setProperty($property);
+        return $fieldDefinition;
     }
 
     protected function baseClassName(string $className): string

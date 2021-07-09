@@ -18,10 +18,9 @@ class SchemaCreator
 
         $rClass = new \ReflectionClass($className);
 
-        $tableDefinition = $this->getAttribute($rClass, Table::class);
-        $tableName = $tableDefinition?->name ?? $this->baseClassName($className);
+        $tableDefinition = $this->getAttribute($rClass, Table::class) ?? new Table(name: $this->baseClassName($className));
 
-        $table = $schema->createTable($tableName);
+        $table = $schema->createTable($tableDefinition?->name);
 
         $rProperties = $rClass->getProperties();
         // @todo Convert to first-class-callables when those are merged.

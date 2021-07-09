@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use \PHPUnit\Framework\TestCase;
+use Crell\Rekodi\Records\Point;
+use Crell\Rekodi\Records\OptionalPoint;
 
 class PopulatorTest extends TestCase
 {

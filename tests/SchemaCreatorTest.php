@@ -6,6 +6,7 @@ namespace Crell\Rekodi;
 
 use Doctrine\DBAL\Connection;
 use \PHPUnit\Framework\TestCase;
+use Crell\Rekodi\Records\Point;
 
 class SchemaCreatorTest extends TestCase
 {

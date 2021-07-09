@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Crell\Rekodi;
+namespace Crell\Rekodi\Records;
 
 class OptionalPoint
 {

@@ -8,8 +8,10 @@ use \PHPUnit\Framework\TestCase;
 
 class PopulatorTest extends TestCase
 {
+
     /**
      * @test
+     * @requires PHP >= 8.1
      * @dataProvider validConstructionsProvider
      */
     public function valid_constructions_populate(string $class, array $data): void
@@ -22,6 +24,7 @@ class PopulatorTest extends TestCase
 
     /**
      * @test
+     * @requires PHP >= 8.1
      * @dataProvider invalidConstructionsProvider
      */
     public function invalid_constructions_fail(string $class, array $data, PopulatorErrors $error): void
@@ -70,22 +73,4 @@ class PopulatorTest extends TestCase
             'data' => [],
         ];
     }
-}
-
-class Point
-{
-    public function __construct(
-        public int $x,
-        public int $y,
-        public int $z,
-    ) {}
-}
-
-class OptionalPoint
-{
-    public function __construct(
-        public int $x = 0,
-        public int $y = 0,
-        public int $z = 0,
-    ) {}
 }

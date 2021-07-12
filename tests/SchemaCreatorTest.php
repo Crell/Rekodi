@@ -13,8 +13,6 @@ class SchemaCreatorTest extends TestCase
 {
     use DoctrineConnection;
 
-    protected Connection $conn;
-
     public function setUp(): void
     {
         parent::setUp();

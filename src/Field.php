@@ -18,6 +18,11 @@ class Field
 {
     public \ReflectionProperty $property;
 
+    /**
+     * The SQL (Doctrine) type of this field.
+     */
+    public string $type;
+
     public function __construct(
         public ?string $field = null,
         public bool $skip = false,

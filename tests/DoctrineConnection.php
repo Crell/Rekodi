@@ -9,6 +9,8 @@ use Doctrine\DBAL\DriverManager;
 
 trait DoctrineConnection
 {
+    protected Connection $conn;
+
     protected function getConnection(): Connection
     {
         return $this->conn ??= $this->createConnection();

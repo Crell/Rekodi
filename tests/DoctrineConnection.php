@@ -24,6 +24,11 @@ trait DoctrineConnection
             'password' => 'test',
             'host' => 'db',
             'driver' => 'pdo_mysql',
+            // Emulated prepared statements on PHP 8.0 don't
+            // return values in the correct type, so disable them for now.
+            'driverOptions' => [
+                \PDO::ATTR_EMULATE_PREPARES => false,
+            ]
         ];
         return DriverManager::getConnection($connectionParams);
     }

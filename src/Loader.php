@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Result;
 
 class Loader
 {
@@ -14,6 +15,9 @@ class Loader
         protected Connection $conn,
     ) {}
 
+    /**
+     * @todo This should return something useful. Not sure what yet.
+     */
     public function save(object $object): void
     {
         $rObject = new \ReflectionObject($object);
@@ -22,23 +26,26 @@ class Loader
 
         $fields = $this->getFieldDefinitions($rObject);
 
-        //$fieldNames = array_map([$this, 'getFieldName'], $fields);
-
         foreach ($fields as $field) {
             $insert[$field->field] = $field->property->getValue($object);
         }
 
         $this->conn->insert($tableDefinition->name, $insert);
-
-        /*
-        $qb = $this->conn->createQueryBuilder();
-        $qb->addSelect(...$fields);
-        $qb->from($tableDefinition->name);
-        */
     }
 
-    protected function getFieldName(Field $field): string
+    public function loadRecords(Result $result, string $class): iterable
     {
-        return $field->field;
+        $fields = $this->getFieldDefinitions(new \ReflectionClass($class));
+
+        foreach ($result->iterateAssociative() as $record) {
+            // This weirdness is the most declarative way to array_map into
+            // an associative array. Maybe this should get factored out.
+            // @see https://www.danielauener.com/howto-use-array_map-on-associative-arrays-to-change-values-and-keys/
+            $init = array_reduce($fields, function (array $init, Field $field) use ($record) {
+                $init[$field->property->name] = $record[$field->field];
+                return $init;
+            }, []);
+            yield new $class(...$init);
+        }
     }
 }

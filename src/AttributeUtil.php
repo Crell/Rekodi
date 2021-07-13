@@ -14,9 +14,6 @@ trait AttributeUtil
     }
 
     /**
-     *
-     *
-     * @param \ReflectionObject|\ReflectionClass $subject
      * @return Field[]
      */
     protected function getFieldDefinitions(\ReflectionObject|\ReflectionClass $subject): array

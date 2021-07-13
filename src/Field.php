@@ -31,6 +31,8 @@ class Field
         public ?bool $unsigned = null,
     ) {}
 
+    // I don't love this function; it's not very functional. But I'm not sure
+    // what the better alternative is other than just returning a new object.
     public function setProperty(\ReflectionProperty $property): void
     {
         $this->property = $property;

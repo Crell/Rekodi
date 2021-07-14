@@ -35,17 +35,29 @@ class Loader
 
     public function loadRecords(Result $result, string $class): iterable
     {
-        $fields = $this->getFieldDefinitions(new \ReflectionClass($class));
+        $rClass = new \ReflectionClass($class);
+        $fields = $this->getFieldDefinitions($rClass);
+
+        // Bust into the object to set properties, regardless of their
+        // visibility or readonly status.
+        $populate = function($init) {
+            foreach ($init as $k => $v) {
+                $this->$k = $v;
+            }
+            return $this;
+        };
 
         foreach ($result->iterateAssociative() as $record) {
             // This weirdness is the most declarative way to array_map into
             // an associative array. Maybe this should get factored out.
             // @see https://www.danielauener.com/howto-use-array_map-on-associative-arrays-to-change-values-and-keys/
-            $init = array_reduce($fields, function (array $init, Field $field) use ($record) {
+            $init = array_reduce($fields, static function (array $init, Field $field) use ($record) {
                 $init[$field->property->name] = $record[$field->field];
                 return $init;
             }, []);
-            yield new $class(...$init);
+
+            $new = $rClass->newInstanceWithoutConstructor();
+            yield $populate->bindTo($new, $new)($init);
         }
     }
 }

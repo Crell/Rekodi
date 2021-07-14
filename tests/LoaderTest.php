@@ -63,7 +63,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         // Make the table.
         $schema = new SchemaCreator($conn);
-        $table = $schema->createSchemaDefinition(Point::class);
+        $table = $schema->createSchemaDefinition($class);
         $conn->createSchemaManager()->createTable($table);
     }
 }

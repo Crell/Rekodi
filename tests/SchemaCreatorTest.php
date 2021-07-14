@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Crell\Rekodi\Records\OptionalPoint;
+use Crell\Rekodi\Records\Person;
 use Crell\Rekodi\Records\Point;
-use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\TestCase;
 
 class SchemaCreatorTest extends TestCase
@@ -44,6 +44,9 @@ class SchemaCreatorTest extends TestCase
             if (isset($def['default'])) {
                 self::assertEquals($def['default'], $columns[$columnName]->getDefault());
             }
+            if (isset($def['autoincrement'])) {
+                self::assertTrue($columns[$columnName]->getAutoincrement());
+            }
         }
     }
 
@@ -80,6 +83,22 @@ class SchemaCreatorTest extends TestCase
                     'type' => 'integer',
                     'default' => 0,
                 ]
+            ],
+        ];
+        yield Person::class => [
+            'class' => Person::class,
+            'table' => 'Person',
+            'expectedColumns' => [
+                'id' => [
+                    'type' => 'integer',
+                    'autoincrement' => true,
+                ],
+                'first' => [
+                    'type' => 'string',
+                ],
+                'last' => [
+                    'type' => 'string',
+                ],
             ],
         ];
     }

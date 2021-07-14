@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\Rekodi\Records\Person;
 use Crell\Rekodi\Records\Point;
 use \PHPUnit\Framework\TestCase;
 
@@ -56,6 +57,47 @@ class LoaderTest extends TestCase
         $records = iterator_to_array($loader->loadRecords($result, Point::class));
         self::assertEquals(new Point(x: 1, y: 2, z: 3), $records[0]);
         self::assertEquals(new Point(x: 1, y: 8, z: 9), $records[1]);
+    }
+
+    /**
+     * @test
+     */
+    public function can_save_new_record_with_no_id(): void
+    {
+        $conn = $this->getConnection();
+        $this->ensureTableClass(Person::class);
+
+        $loader = new Loader($conn);
+
+        $loader->save(new Person(first: 'Larry', last: 'Garfield'));
+
+        $result = $conn->executeQuery("SELECT id, first, last FROM Person");
+        $loaded = iterator_to_array($loader->loadRecords($result, Person::class))[0];
+        self::assertEquals(1, $loaded->id);
+        self::assertEquals('Larry', $loaded->first);
+        self::assertEquals('Garfield', $loaded->last);
+    }
+
+    /**
+     * @test
+     */
+    public function can_save_and_load_by_id(): void
+    {
+        $conn = $this->getConnection();
+        $this->ensureTableClass(Person::class);
+
+        $loader = new Loader($conn);
+
+        // Assume the generated ID is 1, because the table is fresh. We hope.
+
+        $loader->save(new Person(first: 'Larry', last: 'Garfield'));
+
+        $person = $loader->load(Person::class, 1);
+
+        self::assertEquals('Larry', $person->first);
+        self::assertEquals('Garfield', $person->last);
+        self::assertIsInt($person->id);
+        self::assertSame($person->id, 1);
     }
 
     protected function ensureTableClass(string $class): void

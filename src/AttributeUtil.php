@@ -10,6 +10,13 @@ trait AttributeUtil
     {
         $fieldDefinition = $this->getAttribute($property, Field::class) ?? new Field();
         $fieldDefinition->setProperty($property);
+
+        /** @var Id $id */
+        $id = $this->getAttribute($property, Id::class);
+        if ($id) {
+            $fieldDefinition->setId($id);
+        }
+
         return $fieldDefinition;
     }
 

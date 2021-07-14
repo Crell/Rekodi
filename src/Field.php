@@ -18,6 +18,9 @@ class Field
 {
     public \ReflectionProperty $property;
 
+    // Nullable so that nullsafe property calls work.
+    public ?Id $idDef = null;
+
     /**
      * The SQL (Doctrine) type of this field.
      */
@@ -46,6 +49,16 @@ class Field
         $this->default ??= $property->getDefaultValue();
     }
 
+    public function setId(Id $idDef): void
+    {
+        $this->idDef = $idDef;
+    }
+
+    public function isId(): bool
+    {
+        return isset($this->idDef);
+    }
+
     /**
      * Maps to the Doctrine Schema addField(options) array. Check the docs there.
      */
@@ -56,6 +69,9 @@ class Field
             if ($this->$key) {
                 $ret[$key] = $this->$key;
             }
+        }
+        if ($this->idDef?->generate) {
+            $ret['autoincrement'] = true;
         }
         return $ret;
     }

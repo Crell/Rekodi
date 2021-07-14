@@ -10,6 +10,6 @@ use Attribute;
 class Id
 {
     public function __construct(
-        public bool $generate = true,
+        public bool $generate = false,
     ) {}
 }

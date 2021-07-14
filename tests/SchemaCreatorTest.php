@@ -6,6 +6,7 @@ namespace Crell\Rekodi;
 
 use Crell\Rekodi\Records\OptionalPoint;
 use Crell\Rekodi\Records\Person;
+use Crell\Rekodi\Records\PersonSSN;
 use Crell\Rekodi\Records\Point;
 use PHPUnit\Framework\TestCase;
 
@@ -92,6 +93,21 @@ class SchemaCreatorTest extends TestCase
                 'id' => [
                     'type' => 'integer',
                     'autoincrement' => true,
+                ],
+                'first' => [
+                    'type' => 'string',
+                ],
+                'last' => [
+                    'type' => 'string',
+                ],
+            ],
+        ];
+        yield PersonSSN::class => [
+            'class' => PersonSSN::class,
+            'table' => 'PersonSSN',
+            'expectedColumns' => [
+                'ssn' => [
+                    'type' => 'string',
                 ],
                 'first' => [
                     'type' => 'string',

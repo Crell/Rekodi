@@ -74,7 +74,7 @@ class Field
 
         return match ($rType->getName()) {
             'int' => 'integer',
-            'string' => 'varchar',
+            'string' => 'string',
         };
     }
 }

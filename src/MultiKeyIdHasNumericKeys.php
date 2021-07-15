@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Crell\Rekodi;
+
+class MultiKeyIdHasNumericKeys extends \InvalidArgumentException
+{
+    // @todo Make readonly.
+    public string $table;
+
+    // @todo Make readonly.
+    public array $ids;
+
+    public static function create(string $table, array $ids): static
+    {
+        $new = new static();
+        $new->table = $table;
+        $new->ids = $ids;
+
+        $new->message = 'A multi-key ID must include a name for each field.';
+
+        return $new;
+    }
+}

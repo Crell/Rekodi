@@ -66,25 +66,31 @@ class Loader
     }
 
     /**
+     * Load a single record from the database.
+     *
      * Only works for tables that have at least one ID field.
+     *
+     * @param string $type
+     *   The class name to load.
+     * @param int|float|string ...$id
+     *   This variadic parameter allows the passing of one or more key fields.
+     *   Most records will have a single primary key field, in which case just pass
+     *   a single argument on its own, like load(MyClass::class, 5);
+     *   If a record has multiple key fields, you can pass each key field variadically
+     *   by name, like so: load(MyClass::class, key1: 5, key2: 6);
+     *   To build a multi-key list dynamically, splat an array: load(MyClass::class, ...$keys);
+     *
+     * @return ?object
+     *   The loaded object, or null if not found.
      */
-    public function load(string $type, int|float|string|array $id): ?object
+    public function load(string $type, int|float|string ...$id): ?object
     {
         $tableDef = $this->tableDefinition($type);
 
         $keyFields = $tableDef->getIdFields();
         $valueFields = $tableDef->getValueFields();
 
-        // Normalize data.
-        // This works iff there is only one key field, which is the typical case.
-        // Better error checking is probably useful.
-        if (!is_array($id)) {
-            $id = [$keyFields[0]->field => $id];
-        }
-
-        if (count($keyFields) !== count($id)) {
-            throw new IdFieldCountMismatch($type, count($keyFields), count($id));
-        }
+        $ids = $this->normalizeIds($id, $type, $keyFields);
 
         $qb = $this->conn->createQueryBuilder();
         // Select all fields
@@ -93,13 +99,23 @@ class Loader
         // From the table
         $qb->from($tableDef->name);
         // Where matching on the ID fields.
-        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($id), array_values($id));
+        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($ids), array_values($ids));
         $qb->where($qb->expr()->and(...$ands));
 
         $result = $qb->executeQuery();
         // It would be really nice to replace this with an enum error value instead.
         // Aka, a proper monad.
         return iterator_to_array($this->loadRecords($type, $result))[0] ?? null;
+    }
+
+    protected function normalizeIds(array $id, string $type, array $keyFields): array
+    {
+        return match (true) {
+            count($id) !== count($keyFields) => throw IdFieldCountMismatch::create($type, count($keyFields), count($id)),
+            count($id) > 1 && $this->array_is_list($id) => throw MultiKeyIdHasNumericKeys::create($type, $id),
+            count($id) === 1 && $this->array_is_list($id) => [$keyFields[0]->field => $id[0]],
+            count($id) > 1 => $id,
+        };
     }
 
     public function loadRecords(string $class, Result $result): iterable
@@ -130,27 +146,46 @@ class Loader
         }
     }
 
-    // @todo This should probably return something meaningful.
-    public function delete(string $type, int|float|string|array $id): void
+    /**
+     * Load a single record from the database.
+     *
+     * Only works for tables that have at least one ID field.
+     *
+     * @todo This should probably return something meaningful.
+     *
+     * @param string $type
+     *   The class name to load.
+     * @param int|float|string ...$id
+     *   This variadic parameter allows the passing of one or more key fields.
+     *   Most records will have a single primary key field, in which case just pass
+     *   a single argument on its own, like load(MyClass::class, 5);
+     *   If a record has multiple key fields, you can pass each key field variadically
+     *   by name, like so: load(MyClass::class, key1: 5, key2: 6);
+     *   To build a multi-key list dynamically, splat an array: load(MyClass::class, ...$keys);
+     */
+    public function delete(string $type, int|float|string ...$id): void
     {
         $tableDef = $this->tableDefinition($type);
 
-        $keyFields = $tableDef->getIdFields();
-
-        // Normalize data.
-        // This works iff there is only one key field, which is the typical case.
-        // Better error checking is probably useful.
-        if (!is_array($id)) {
-            $id = [$keyFields[0]->field => $id];
-        }
+        $ids = $this->normalizeIds($id, $type, $tableDef->getIdFields());
 
         $qb = $this->conn->createQueryBuilder();
 
         $qb->delete($tableDef->name);
         // Where matching on the ID fields.
-        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($id), array_values($id));
+        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($ids), array_values($ids));
         $qb->where($qb->expr()->and(...$ands));
 
         $qb->executeQuery();
+    }
+
+    // @todo Polyfill. This function is in PHP 8.1. Remove when updating.
+    private function array_is_list(array $array): bool {
+        $expectedKey = 0;
+        foreach ($array as $i => $_) {
+            if ($i !== $expectedKey) { return false; }
+            $expectedKey++;
+        }
+        return true;
     }
 }

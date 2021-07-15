@@ -159,6 +159,9 @@ class LoaderTest extends TestCase
         }
     }
 
+    /**
+     * @test
+     */
     public function can_save_load_and_delete_compound_keys(): void
     {
         $conn = $this->getConnection();
@@ -168,16 +171,66 @@ class LoaderTest extends TestCase
 
         $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
 
-        // @todo I don't love this, because of the array. Maybe there's a better way with variadics?
-        $record = $loader->load(MultiKey::class, ['scope' => 4, 'local' => 5]);
+        $record = $loader->load(MultiKey::class, scope: 4, local: 5);
 
         self::assertEquals(4, $record->scope);
         self::assertEquals(5, $record->local);
         self::assertEquals('beep', $record->data);
 
-        $loader->delete(MultiKey::class, ['scope' => 4, 'local' => 5]);
+        $loader->delete(MultiKey::class, scope: 4, local: 5);
 
-        self::assertNull($loader->load(MultiKey::class, ['scope' => 4, 'local' => 5]));
+        self::assertNull($loader->load(MultiKey::class, scope: 4, local: 5));
+    }
+
+    /**
+     * @test
+     */
+    public function too_few_keys_throws(): void
+    {
+        $this->expectException(IdFieldCountMismatch::class);
+
+        $conn = $this->getConnection();
+        $this->ensureTableClass(MultiKey::class);
+
+        $loader = new Loader($conn);
+
+        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+
+        $loader->load(MultiKey::class, scope: 4);
+    }
+
+    /**
+     * @test
+     */
+    public function too_many_keys_throws(): void
+    {
+        $this->expectException(IdFieldCountMismatch::class);
+
+        $conn = $this->getConnection();
+        $this->ensureTableClass(MultiKey::class);
+
+        $loader = new Loader($conn);
+
+        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+
+        $loader->load(MultiKey::class, scope: 4, local: 5, data: 'beep');
+    }
+
+    /**
+     * @test
+     */
+    public function numeric_multi_key_throws(): void
+    {
+        $this->expectException(MultiKeyIdHasNumericKeys::class);
+
+        $conn = $this->getConnection();
+        $this->ensureTableClass(MultiKey::class);
+
+        $loader = new Loader($conn);
+
+        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+
+        $loader->load(MultiKey::class, ...[4, 5]);
     }
 
     public function deletionDataProvider(): iterable

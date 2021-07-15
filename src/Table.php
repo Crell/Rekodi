@@ -27,11 +27,16 @@ class Table
     }
 
     /**
+     * @todo tri-state logic? Eew. Maybe need separate methods, or an enum, or something.
      * @return Field[]
      */
-    public function getIdFields(): array
+    public function getIdFields(?bool $generated = null): array
     {
-        return array_filter($this->fields, static fn(Field $field): bool => $field->isId());
+        return match($generated) {
+            true => array_filter($this->fields, static fn(Field $field): bool => $field->isId() && $field->idDef->generate),
+            false => array_filter($this->fields, static fn(Field $field): bool => $field->isId() && !$field->idDef->generate),
+            null => array_filter($this->fields, static fn(Field $field): bool => $field->isId()),
+        };
     }
 
     /**

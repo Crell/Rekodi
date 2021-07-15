@@ -8,10 +8,10 @@ use Crell\Rekodi\Id;
 
 class PersonSSN
 {
-    #[Id]
-    public string $ssn;
 
     public function __construct(
+        #[Id]
+        public string $ssn,
         public string $first,
         public string $last,
     ) {}

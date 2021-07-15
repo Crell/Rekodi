@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Crell\Rekodi\Records\Person;
+use Crell\Rekodi\Records\PersonSSN;
 use Crell\Rekodi\Records\Point;
 use \PHPUnit\Framework\TestCase;
 
@@ -81,7 +82,7 @@ class LoaderTest extends TestCase
     /**
      * @test
      */
-    public function can_save_and_load_by_id(): void
+    public function can_save_and_load_by_autoinc_id(): void
     {
         $conn = $this->getConnection();
         $this->ensureTableClass(Person::class);
@@ -98,6 +99,27 @@ class LoaderTest extends TestCase
         self::assertEquals('Garfield', $person->last);
         self::assertIsInt($person->id);
         self::assertSame($person->id, 1);
+    }
+
+    /**
+     * @test
+     */
+    public function can_save_and_load_by_string_id(): void
+    {
+        $conn = $this->getConnection();
+        $this->ensureTableClass(PersonSSN::class);
+
+        $loader = new Loader($conn);
+
+        // Assume the generated ID is 1, because the table is fresh. We hope.
+
+        $loader->save(new PersonSSN(ssn: '123-45-6789', first: 'Larry', last: 'Garfield'));
+
+        $person = $loader->load(PersonSSN::class, '123-45-6789');
+
+        self::assertEquals('Larry', $person->first);
+        self::assertEquals('Garfield', $person->last);
+        self::assertEquals('123-45-6789', $person->ssn);
     }
 
     protected function ensureTableClass(string $class): void

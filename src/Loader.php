@@ -28,30 +28,34 @@ class Loader
         $tableDefinition->setFields($fields);
 
         // We need the key field list separate from the non-key-field, so build them separately.
-        $keyFields = [];
-        foreach ($tableDefinition->getIdFields() as $field) {
-            // PHPStorms stubs are out of date again.
-            $keyFields[$field->field] = $field->property->isInitialized($object) ? $field->property->getValue($object) : null;
-        }
-        $keyFields = array_filter($keyFields);
+        $keyFields = $this->fieldValueMap($tableDefinition->getIdFields(), $object);
 
-        $insert = [];
-        foreach ($tableDefinition->getValueFields() as $field) {
-            $insert[$field->field] = $field->property->isInitialized($object) ? $field->property->getValue($object) : null;
-        }
-        $insert = array_filter($insert);
+        $insert = $this->fieldValueMap($tableDefinition->getValueFields(), $object);
 
         // There is no good cross-DB way to do this, so we do it the ugly way.
         // Replace with a less ugly way if possible.
-        $this->conn->transactional(function(Connection $conn) use ($tableDefinition, $keyFields, $insert) {
+        $this->conn->transactional(function(Connection $conn) use ($tableDefinition, $keyFields, $insert, $object) {
             // If there's no key fields defined for this object, we can't do an existing lookup.
             // It can only be an insert.
             if ($keyFields && $this->recordExists($tableDefinition->name, $keyFields)) {
                 $conn->update($tableDefinition->name, $insert, $keyFields);
             } else {
+                $insert += $this->fieldValueMap($tableDefinition->getIdFields(generated: false), $object);
                 $conn->insert($tableDefinition->name, $insert);
             }
         });
+    }
+
+    /**
+     * @param Field[] $fields
+     */
+    protected function fieldValueMap(array $fields, object $object): array
+    {
+        $ret = [];
+        foreach ($fields as $field) {
+            $ret[$field->field] = $field->property->isInitialized($object) ? $field->property->getValue($object) : null;
+        }
+        return array_filter($ret);
     }
 
     protected function recordExists(string $table, array $where): bool
@@ -97,7 +101,7 @@ class Loader
         // From the table
         $qb->from($tableDef->name);
         // Where matching on the ID fields.
-        $ands = array_map(fn($k, $v) => $qb->expr()->eq($k, $v), array_keys($id), array_values($id));
+        $ands = array_map(fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($id), array_values($id));
         $qb->where($qb->expr()->and(...$ands));
 
         $result = $qb->executeQuery();

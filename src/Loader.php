@@ -22,26 +22,26 @@ class Loader
     {
         $rObject = new \ReflectionObject($object);
 
-        $tableDefinition = $this->getAttribute($rObject, Table::class) ?? new Table(name: $this->baseClassName($object::class));
+        $tableDef = $this->getAttribute($rObject, Table::class) ?? new Table(name: $this->baseClassName($object::class));
 
         $fields = $this->getFieldDefinitions($rObject);
-        $tableDefinition->setFields($fields);
+        $tableDef->setFields($fields);
 
         // We need the key field list separate from the non-key-field, so build them separately.
-        $keyFields = $this->fieldValueMap($tableDefinition->getIdFields(), $object);
+        $keyFields = $this->fieldValueMap($tableDef->getIdFields(), $object);
 
-        $insert = $this->fieldValueMap($tableDefinition->getValueFields(), $object);
+        $insert = $this->fieldValueMap($tableDef->getValueFields(), $object);
 
         // There is no good cross-DB way to do this, so we do it the ugly way.
         // Replace with a less ugly way if possible.
-        $this->conn->transactional(function(Connection $conn) use ($tableDefinition, $keyFields, $insert, $object) {
+        $this->conn->transactional(function(Connection $conn) use ($tableDef, $keyFields, $insert, $object) {
             // If there's no key fields defined for this object, we can't do an existing lookup.
             // It can only be an insert.
-            if ($keyFields && $this->recordExists($tableDefinition->name, $keyFields)) {
-                $conn->update($tableDefinition->name, $insert, $keyFields);
+            if ($keyFields && $this->recordExists($tableDef->name, $keyFields)) {
+                $conn->update($tableDef->name, $insert, $keyFields);
             } else {
-                $insert += $this->fieldValueMap($tableDefinition->getIdFields(generated: false), $object);
-                $conn->insert($tableDefinition->name, $insert);
+                $insert += $this->fieldValueMap($tableDef->getIdFields(generated: false), $object);
+                $conn->insert($tableDef->name, $insert);
             }
         });
     }

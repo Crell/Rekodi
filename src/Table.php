@@ -17,9 +17,16 @@ class Table
      */
     public array $fields;
 
+    public \ReflectionClass $rClass;
+
     public function __construct(
         public ?string $name = null,
     ) {}
+
+    public function setReflection(\ReflectionClass $rClass): void
+    {
+        $this->rClass = $rClass;
+    }
 
     public function setFields(array $fields): void
     {

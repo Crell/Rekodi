@@ -20,16 +20,10 @@ class Loader
      */
     public function save(object $object): void
     {
-        $rObject = new \ReflectionObject($object);
-
-        $tableDef = $this->getAttribute($rObject, Table::class) ?? new Table(name: $this->baseClassName($object::class));
-
-        $fields = $this->getFieldDefinitions($rObject);
-        $tableDef->setFields($fields);
+        $tableDef = $this->tableDefinition($object::class);
 
         // We need the key field list separate from the non-key-field, so build them separately.
         $keyFields = $this->fieldValueMap($tableDef->getIdFields(), $object);
-
         $insert = $this->fieldValueMap($tableDef->getValueFields(), $object);
 
         // There is no good cross-DB way to do this, so we do it the ugly way.
@@ -76,9 +70,7 @@ class Loader
      */
     public function load(string $type, int|float|string|array $id): ?object
     {
-        $rClass = new \ReflectionClass($type);
-        $tableDef = $this->getAttribute($rClass, Table::class) ?? new Table(name: $this->baseClassName($type));
-        $tableDef->setFields($this->getFieldDefinitions($rClass));
+        $tableDef = $this->tableDefinition($type);
 
         $keyFields = $tableDef->getIdFields();
         $valueFields = $tableDef->getValueFields();
@@ -112,8 +104,8 @@ class Loader
 
     public function loadRecords(Result $result, string $class): iterable
     {
-        $rClass = new \ReflectionClass($class);
-        $fields = $this->getFieldDefinitions($rClass);
+        $tableDef = $this->tableDefinition($class);
+        $fields = $tableDef->fields;
 
         // Bust into the object to set properties, regardless of their
         // visibility or readonly status.
@@ -133,7 +125,7 @@ class Loader
                 return $init;
             }, []);
 
-            $new = $rClass->newInstanceWithoutConstructor();
+            $new = $tableDef->rClass->newInstanceWithoutConstructor();
             yield $populate->bindTo($new, $new)($init);
         }
     }
@@ -141,9 +133,7 @@ class Loader
     // @todo This should probably return something meaningful.
     public function delete(string $type, int|float|string|array $id): void
     {
-        $rClass = new \ReflectionClass($type);
-        $tableDef = $this->getAttribute($rClass, Table::class) ?? new Table(name: $this->baseClassName($type));
-        $tableDef->setFields($this->getFieldDefinitions($rClass));
+        $tableDef = $this->tableDefinition($type);
 
         $keyFields = $tableDef->getIdFields();
 

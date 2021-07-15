@@ -6,6 +6,34 @@ namespace Crell\Rekodi;
 
 trait AttributeUtil
 {
+    /**
+     * @var Table[string]
+     *
+     * Lookup cache.
+     */
+    protected array $tableDefinitions = [];
+
+    protected function tableDefinition(string $class): Table
+    {
+        return $this->tableDefinitions[$class] ??= $this->createTableDefinition($class);
+    }
+
+    protected function createTableDefinition(string $class): Table
+    {
+        $rClass = new \ReflectionClass($class);
+        $tableDef = $this->getAttribute($rClass, Table::class) ?? new Table(name: $this->baseClassName($class));
+        if (is_null($tableDef->name)) {
+            $tableDef->name = $this->baseClassName($class);
+        }
+        $tableDef->setReflection($rClass);
+
+        $fields = $this->getFieldDefinitions($rClass);
+        $tableDef->setFields($fields);
+
+        return $tableDef;
+    }
+
+
     protected function getPropertyDefinition(\ReflectionProperty $property): Field
     {
         $fieldDefinition = $this->getAttribute($property, Field::class) ?? new Field();

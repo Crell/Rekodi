@@ -18,15 +18,11 @@ class SchemaCreator
     {
         $schema = $this->conn->createSchemaManager()->createSchema();
 
-        $rClass = new \ReflectionClass($className);
-
-        $tableDef = $this->getAttribute($rClass, Table::class) ?? new Table(name: $this->baseClassName($className));
+        $tableDef = $this->tableDefinition($className);
 
         $table = $schema->createTable($tableDef->name);
-        $fields = $this->getFieldDefinitions($rClass);
-        $tableDef->setFields($fields);
 
-        array_map(static fn(Field $f) => $table->addColumn($f->field, $f->type, $f->options()), $fields);
+        array_map(static fn(Field $f) => $table->addColumn($f->field, $f->type, $f->options()), $tableDef->fields);
 
         if ($idFields = $tableDef->getIdFields()) {
             $pkeys = array_map(static fn(Field $f) => $f->field, $idFields);

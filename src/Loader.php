@@ -101,7 +101,7 @@ class Loader
         // From the table
         $qb->from($tableDef->name);
         // Where matching on the ID fields.
-        $ands = array_map(fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($id), array_values($id));
+        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($id), array_values($id));
         $qb->where($qb->expr()->and(...$ands));
 
         $result = $qb->executeQuery();
@@ -136,5 +136,31 @@ class Loader
             $new = $rClass->newInstanceWithoutConstructor();
             yield $populate->bindTo($new, $new)($init);
         }
+    }
+
+    // @todo This should probably return something meaningful.
+    public function delete(string $type, int|float|string|array $id): void
+    {
+        $rClass = new \ReflectionClass($type);
+        $tableDef = $this->getAttribute($rClass, Table::class) ?? new Table(name: $this->baseClassName($type));
+        $tableDef->setFields($this->getFieldDefinitions($rClass));
+
+        $keyFields = $tableDef->getIdFields();
+
+        // Normalize data.
+        // This works iff there is only one key field, which is the typical case.
+        // Better error checking is probably useful.
+        if (!is_array($id)) {
+            $id = [$keyFields[0]->field => $id];
+        }
+
+        $qb = $this->conn->createQueryBuilder();
+
+        $qb->delete($tableDef->name);
+        // Where matching on the ID fields.
+        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $qb->createNamedParameter($v)), array_keys($id), array_values($id));
+        $qb->where($qb->expr()->and(...$ands));
+
+        $qb->executeQuery();
     }
 }

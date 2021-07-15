@@ -134,6 +134,45 @@ class LoaderTest extends TestCase
         self::assertNull($ret);
     }
 
+    /**
+     * @test
+     * @dataProvider deletionDataProvider
+     */
+    public function can_delete_by_id(string $class, array $records, array $deleteIds): void
+    {
+        $conn = $this->getConnection();
+        $this->ensureTableClass($class);
+
+        $loader = new Loader($conn);
+
+        foreach ($records as $record) {
+            $loader->save($record);
+        }
+
+        foreach ($deleteIds as $del) {
+            $loader->delete($class, $del);
+        }
+
+        foreach ($deleteIds as $del) {
+            self::assertNull($loader->load($class, $del));
+        }
+    }
+
+    public function deletionDataProvider(): iterable
+    {
+        yield [
+            'class' => PersonSSN::class,
+            'records' => [
+                new PersonSSN('123-45-6789', 'Larry', 'Garfield'),
+                new PersonSSN('321-65-4987', 'Jimmy', 'Garfield'),
+            ],
+            'deleteIds' => [
+                '123-45-6789',
+                '321-65-4987',
+            ]
+        ];
+    }
+
     protected function ensureTableClass(string $class): void
     {
         $conn = $this->getConnection();

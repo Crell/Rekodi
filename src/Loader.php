@@ -147,7 +147,7 @@ class Loader
     }
 
     /**
-     * Load a single record from the database.
+     * Delete a single record from the database.
      *
      * Only works for tables that have at least one ID field.
      *

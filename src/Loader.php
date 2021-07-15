@@ -99,10 +99,10 @@ class Loader
         $result = $qb->executeQuery();
         // It would be really nice to replace this with an enum error value instead.
         // Aka, a proper monad.
-        return iterator_to_array($this->loadRecords($result, $type))[0] ?? null;
+        return iterator_to_array($this->loadRecords($type, $result))[0] ?? null;
     }
 
-    public function loadRecords(Result $result, string $class): iterable
+    public function loadRecords(string $class, Result $result): iterable
     {
         $tableDef = $this->tableDefinition($class);
         $fields = $tableDef->fields;

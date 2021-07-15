@@ -56,7 +56,7 @@ class LoaderTest extends TestCase
         $loader->save(new Point(x: 1, y: 8, z: 9));
 
         $result = $conn->executeQuery("SELECT x, y_axis, z FROM MyPoints WHERE x=? ORDER BY x, y_axis, z", [1]);
-        $records = iterator_to_array($loader->loadRecords($result, Point::class));
+        $records = iterator_to_array($loader->loadRecords(Point::class, $result));
         self::assertEquals(new Point(x: 1, y: 2, z: 3), $records[0]);
         self::assertEquals(new Point(x: 1, y: 8, z: 9), $records[1]);
     }
@@ -75,7 +75,7 @@ class LoaderTest extends TestCase
         $loader->save(new Person(first: 'Larry', last: 'Garfield'));
 
         $result = $conn->executeQuery("SELECT id, first, last FROM Person");
-        $loaded = iterator_to_array($loader->loadRecords($result, Person::class))[0];
+        $loaded = iterator_to_array($loader->loadRecords(Person::class, $result))[0];
         self::assertEquals(1, $loaded->id);
         self::assertEquals('Larry', $loaded->first);
         self::assertEquals('Garfield', $loaded->last);

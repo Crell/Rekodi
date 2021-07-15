@@ -14,6 +14,9 @@ class SchemaCreator
 
     public function __construct(protected Connection $conn) {}
 
+    // @todo There's a bug in here somewhere that lowercases all field names, instead
+    // of respecting mixed case.  I expect it's a Doctrine bug of some sort.
+    // Need to track that down.  It doesn't seem to happen to table names.
     public function createSchemaDefinition(string $className): DoctrineTable
     {
         $schema = $this->conn->createSchemaManager()->createSchema();

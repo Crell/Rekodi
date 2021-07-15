@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\Person;
 use Crell\Rekodi\Records\PersonSSN;
 use Crell\Rekodi\Records\Point;
@@ -156,6 +157,27 @@ class LoaderTest extends TestCase
         foreach ($deleteIds as $del) {
             self::assertNull($loader->load($class, $del));
         }
+    }
+
+    public function can_save_load_and_delete_compound_keys(): void
+    {
+        $conn = $this->getConnection();
+        $this->ensureTableClass(MultiKey::class);
+
+        $loader = new Loader($conn);
+
+        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+
+        // @todo I don't love this, because of the array. Maybe there's a better way with variadics?
+        $record = $loader->load(MultiKey::class, ['scope' => 4, 'local' => 5]);
+
+        self::assertEquals(4, $record->scope);
+        self::assertEquals(5, $record->local);
+        self::assertEquals('beep', $record->data);
+
+        $loader->delete(MultiKey::class, ['scope' => 4, 'local' => 5]);
+
+        self::assertNull($loader->load(MultiKey::class, ['scope' => 4, 'local' => 5]));
     }
 
     public function deletionDataProvider(): iterable

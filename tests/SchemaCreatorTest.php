@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\OptionalPoint;
 use Crell\Rekodi\Records\Person;
 use Crell\Rekodi\Records\PersonSSN;
@@ -116,6 +117,21 @@ class SchemaCreatorTest extends TestCase
                     'type' => 'string',
                 ],
             ],
+        ];
+        yield MultiKey::class => [
+            'class' => MultiKey::class,
+            'table' => 'MultiKey',
+            'expectedColumns' => [
+                'scope' => [
+                    'type' => 'integer',
+                ],
+                'local' => [
+                    'type' => 'integer',
+                ],
+                'data' => [
+                    'type' => 'string',
+                ],
+            ]
         ];
     }
 }

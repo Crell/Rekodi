@@ -74,7 +74,7 @@ class Loader
     /**
      * Only works for tables that have at least one ID field.
      */
-    public function load(string $type, int|float|string|array $id): object
+    public function load(string $type, int|float|string|array $id): ?object
     {
         $rClass = new \ReflectionClass($type);
         $tableDef = $this->getAttribute($rClass, Table::class) ?? new Table(name: $this->baseClassName($type));
@@ -105,7 +105,9 @@ class Loader
         $qb->where($qb->expr()->and(...$ands));
 
         $result = $qb->executeQuery();
-        return iterator_to_array($this->loadRecords($result, $type))[0];
+        // It would be really nice to replace this with an enum error value instead.
+        // Aka, a proper monad.
+        return iterator_to_array($this->loadRecords($result, $type))[0] ?? null;
     }
 
     public function loadRecords(Result $result, string $class): iterable

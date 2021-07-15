@@ -70,6 +70,7 @@ class LoaderTest extends TestCase
 
         $loader = new Loader($conn);
 
+        // Assume the generated ID is 1, because the table is fresh. We hope.
         $loader->save(new Person(first: 'Larry', last: 'Garfield'));
 
         $result = $conn->executeQuery("SELECT id, first, last FROM Person");
@@ -90,7 +91,6 @@ class LoaderTest extends TestCase
         $loader = new Loader($conn);
 
         // Assume the generated ID is 1, because the table is fresh. We hope.
-
         $loader->save(new Person(first: 'Larry', last: 'Garfield'));
 
         $person = $loader->load(Person::class, 1);
@@ -111,8 +111,6 @@ class LoaderTest extends TestCase
 
         $loader = new Loader($conn);
 
-        // Assume the generated ID is 1, because the table is fresh. We hope.
-
         $loader->save(new PersonSSN(ssn: '123-45-6789', first: 'Larry', last: 'Garfield'));
 
         $person = $loader->load(PersonSSN::class, '123-45-6789');
@@ -120,6 +118,20 @@ class LoaderTest extends TestCase
         self::assertEquals('Larry', $person->first);
         self::assertEquals('Garfield', $person->last);
         self::assertEquals('123-45-6789', $person->ssn);
+    }
+
+    public function test_load_missing_record(): void
+    {
+        $conn = $this->getConnection();
+        $this->ensureTableClass(PersonSSN::class);
+
+        $loader = new Loader($conn);
+
+        $loader->save(new PersonSSN(ssn: '123-45-6789', first: 'Larry', last: 'Garfield'));
+
+        $ret = $loader->load(PersonSSN::class, '987-654-321');
+
+        self::assertNull($ret);
     }
 
     protected function ensureTableClass(string $class): void

@@ -85,6 +85,8 @@ class Field
             'array' => json_decode($value, true, 512, \JSON_THROW_ON_ERROR),
             \DateTime::class => new \DateTime($value),
             \DateTimeImmutable::class => new \DateTimeImmutable($value),
+            // @todo Need a test case for this.
+            'resource' => throw ResourcePropertiesNotAllowed::create($this->property->getName()),
         };
     }
 
@@ -108,6 +110,8 @@ class Field
             \DateTime::class => 'datetimetz',
             \DateTimeImmutable::class => 'datetimetz_immutable',
             'array' => 'json',
+            // @todo Need a test case for this.
+            'resource' => throw ResourcePropertiesNotAllowed::create($this->property->getName()),
         };
     }
 }

@@ -82,6 +82,7 @@ class Field
     {
         return match ($this->getNativeType()) {
             'int', 'float', 'string' => $value,
+            'array' => json_decode($value, true, 512, \JSON_THROW_ON_ERROR),
             \DateTime::class => new \DateTime($value),
             \DateTimeImmutable::class => new \DateTimeImmutable($value),
         };
@@ -106,6 +107,7 @@ class Field
             // Only ever allow storing datetime with TZ data.
             \DateTime::class => 'datetimetz',
             \DateTimeImmutable::class => 'datetimetz_immutable',
+            'array' => 'json',
         };
     }
 }

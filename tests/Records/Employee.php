@@ -37,10 +37,10 @@ class Employee
         public string $last,
         // To test special DateTime handling.
         public \DateTimeImmutable $hireDate,
+        // To test serializing an array to a JSON field.
+        public array $tags,
         // To test foreign Keys.
 //        public Job $job,
-        // To test serializing an array to a JSON field.
-//        public array $tags,
         // To test fully dependent properties as a JSON field.
 //        public Address $address,
         // To test foreign keys to self.

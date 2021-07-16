@@ -138,13 +138,19 @@ class LoaderTest extends TestCase
         yield 'Complex object (Employee)' => [
             'class' => Employee::class,
             'records' => [
-                new Employee(first: 'Larry', last: 'Garfield', hireDate: new \DateTimeImmutable('2021-01-01')),
+                new Employee(
+                    first: 'Larry',
+                    last: 'Garfield',
+                    hireDate: new \DateTimeImmutable('2021-01-01'),
+                    tags: ['developer', 'typo3'],
+                ),
             ],
             'test' => function(Connection $conn, Loader $loader) {
                 $record = $loader->load(Employee::class, 1);
                 self::assertNotNull($record);
                 self::assertEquals('Larry', $record->first);
                 self::assertEquals('Garfield', $record->last);
+                self::assertEquals(['developer', 'typo3'], $record->tags);
                 self::assertEquals(new \DateTimeImmutable('2021-01-01'), $record->hireDate);
             },
         ];

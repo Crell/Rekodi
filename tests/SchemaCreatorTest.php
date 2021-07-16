@@ -158,6 +158,9 @@ class SchemaCreatorTest extends TestCase
                 'hiredate' => [
                     'type' => 'datetimetz_immutable',
                 ],
+                'tags' => [
+                    'type' => 'json',
+                ]
             ],
         ];
     }

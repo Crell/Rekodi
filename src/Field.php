@@ -9,7 +9,7 @@ use Attribute;
 /**
  * @internal
  *
- * @todo This should get subclasses for the different types.
+ * @todo This should probably get subclasses for the different types.
  * We're basically going to end up recreating the Annotations version from Doctrine ORM. :-/
  * cf: https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/schema-representation.html#portable-options
  */
@@ -47,7 +47,7 @@ class Field
         }
 
         $this->field ??= $property->name;
-        $this->type ??= $this->getDoctrineType($property);
+        $this->type ??= $this->getDoctrineType();
         $this->default ??= $property->getDefaultValue();
     }
 
@@ -80,32 +80,27 @@ class Field
 
     public function decodeValueFromDb(int|float|string $value): mixed
     {
-        $type = $this->getNativeType($this->property);
-        return match ($type) {
+        return match ($this->getNativeType()) {
             'int', 'float', 'string' => $value,
             \DateTime::class => new \DateTime($value),
             \DateTimeImmutable::class => new \DateTimeImmutable($value),
         };
     }
 
-    protected function getNativeType(\ReflectionProperty $property): string
+    protected function getNativeType(): string
     {
         /** @var \ReflectionType $rType */
-        $rType = $property->getType();
-        // @todo Some union types we may be able to support, eg int|float.
-        if ($rType instanceof \ReflectionUnionType) {
-            throw UnionTypesNotSupported::create($property);
-        }
-        if ($rType instanceof \ReflectionIntersectionType) {
-            throw IntersectionTypesNotSupported::create($property);
-        }
-
-        return $rType->getName();
+        $rType = $this->property->getType();
+        return match(true) {
+            $rType instanceof \ReflectionUnionType => throw UnionTypesNotSupported::create($this->property),
+            $rType instanceof \ReflectionIntersectionType => throw IntersectionTypesNotSupported::create($this->property),
+            $rType instanceof \ReflectionNamedType => $rType->getName(),
+        };
     }
 
-    protected function getDoctrineType(\ReflectionProperty $property): string
+    protected function getDoctrineType(): string
     {
-        return match ($this->getNativeType($property)) {
+        return match ($this->getNativeType()) {
             'int' => 'integer',
             'string' => 'string',
             // Only ever allow storing datetime with TZ data.

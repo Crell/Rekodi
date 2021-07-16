@@ -23,8 +23,8 @@ class Loader
         $tableDef = $this->tableDefinition($object::class);
 
         // We need the key field list separate from the non-key-field, so build them separately.
-        $keyFields = $this->fieldValueMap($tableDef->getIdFields(), $object);
-        $insert = $this->fieldValueMap($tableDef->getValueFields(), $object);
+        $keyFields = $this->buildFieldValueMap($tableDef->getIdFields(), $object);
+        $insert = $this->buildFieldValueMap($tableDef->getValueFields(), $object);
 
         $insertTypes = array_map(static fn(Field $f): string => $f->type, $tableDef->getValueFields());
         $keyFieldTypes = array_map(static fn(Field $f): string => $f->type, $tableDef->getIdFields());
@@ -37,55 +37,11 @@ class Loader
             if ($keyFields && $this->recordExists($tableDef->name, $keyFields)) {
                 $conn->update($tableDef->name, $insert, $keyFields, $insertTypes);
             } else {
-                $insert += $this->fieldValueMap($tableDef->getIdFields(generated: false), $object);
-                $insertTypes += [...$insertTypes, ...$keyFieldTypes];
+                $insert += $this->buildFieldValueMap($tableDef->getIdFields(generated: false), $object);
+                $insertTypes = [...$insertTypes, ...$keyFieldTypes];
                 $conn->insert($tableDef->name, $insert, $insertTypes);
             }
         });
-    }
-
-    /**
-     * @param Field[] $fields
-     */
-    protected function fieldValueMap(array $fields, object $object): array
-    {
-        // This would be much cleaner with PFA and pipes. :-(
-
-        $validFields = array_filter($fields, fn(Field $f) => $f->property->isInitialized($object));
-        $callback = fn(Field $f) => $this->getFieldValue($f, $object);
-        $ret = [];
-        foreach ($validFields as $field) {
-            $ret[$field->field] = $callback($field);
-        }
-        return $ret;
-    }
-
-    /**
-     * This method is probably wrong. Refactor once we grok Doctrine's type handling better.
-     */
-    protected function getFieldValue(Field $field, object $object): mixed
-    {
-        $value = $field->property->getValue($object);
-        if (in_array(gettype($value), ['int', 'float', 'string'])) {
-            return $value;
-        }
-
-
-        // Other stuff will likely fail, but add those as we go.
-        return $value;
-    }
-
-    protected function recordExists(string $table, array $where): bool
-    {
-        $qb = $this->conn->createQueryBuilder();
-        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $v), array_keys($where), array_values($where));
-        $qb->addSelect('1')->from($table);
-        if ($ands) {
-            $qb->where($qb->expr()->and(...$ands));
-        }
-        $result = $qb->executeQuery();
-
-        return (bool)$result->fetchFirstColumn();
     }
 
     /**
@@ -131,44 +87,6 @@ class Loader
         return iterator_to_array($this->loadRecords($type, $result))[0] ?? null;
     }
 
-    protected function normalizeIds(array $id, string $type, array $keyFields): array
-    {
-        return match (true) {
-            count($id) !== count($keyFields) => throw IdFieldCountMismatch::create($type, count($keyFields), count($id)),
-            count($id) > 1 && $this->array_is_list($id) => throw MultiKeyIdHasNumericKeys::create($type, $id),
-            count($id) === 1 && $this->array_is_list($id) => [$keyFields[0]->field => $id[0]],
-            count($id) > 1 => $id,
-        };
-    }
-
-    public function loadRecords(string $class, Result $result): iterable
-    {
-        $tableDef = $this->tableDefinition($class);
-        $fields = $tableDef->fields;
-
-        // Bust into the object to set properties, regardless of their
-        // visibility or readonly status.
-        $populate = function($init) use ($fields) {
-            foreach ($init as $k => $v) {
-                $this->$k = $fields[$k]->decodeValueFromDb($v);
-            }
-            return $this;
-        };
-
-        foreach ($result->iterateAssociative() as $record) {
-            // This weirdness is the most declarative way to array_map into
-            // an associative array. Maybe this should get factored out.
-            // @see https://www.danielauener.com/howto-use-array_map-on-associative-arrays-to-change-values-and-keys/
-            $init = array_reduce($fields, static function (array $init, Field $field) use ($record) {
-                $init[$field->property->name] = $record[$field->field];
-                return $init;
-            }, []);
-
-            $new = $tableDef->rClass->newInstanceWithoutConstructor();
-            yield $populate->bindTo($new, $new)($init);
-        }
-    }
-
     /**
      * Delete a single record from the database.
      *
@@ -200,6 +118,88 @@ class Loader
         $qb->where($qb->expr()->and(...$ands));
 
         $qb->executeQuery();
+    }
+
+    public function loadRecords(string $class, Result $result): iterable
+    {
+        $tableDef = $this->tableDefinition($class);
+        $fields = $tableDef->fields;
+
+        // Bust into the object to set properties, regardless of their
+        // visibility or readonly status.
+        $populate = function($init) use ($fields) {
+            foreach ($init as $k => $v) {
+                $this->$k = $fields[$k]->decodeValueFromDb($v);
+            }
+            return $this;
+        };
+
+        foreach ($result->iterateAssociative() as $record) {
+            // This weirdness is the most declarative way to array_map into
+            // an associative array. Maybe this should get factored out.
+            // @see https://www.danielauener.com/howto-use-array_map-on-associative-arrays-to-change-values-and-keys/
+            $init = array_reduce($fields, static function (array $init, Field $field) use ($record) {
+                $init[$field->property->name] = $record[$field->field];
+                return $init;
+            }, []);
+
+            $new = $tableDef->rClass->newInstanceWithoutConstructor();
+            yield $populate->bindTo($new, $new)($init);
+        }
+    }
+
+    /**
+     * @param Field[] $fields
+     */
+    protected function buildFieldValueMap(array $fields, object $object): array
+    {
+        // This would be much cleaner with PFA and pipes. :-(
+
+        $validFields = array_filter($fields, fn(Field $f) => $f->property->isInitialized($object));
+        $callback = fn(Field $f) => $this->getFieldValue($f, $object);
+        $ret = [];
+        foreach ($validFields as $field) {
+            $ret[$field->field] = $callback($field);
+        }
+        return $ret;
+    }
+
+    /**
+     * @todo This method is probably wrong. Refactor once we grok Doctrine's type handling better.
+     */
+    protected function getFieldValue(Field $field, object $object): mixed
+    {
+        $value = $field->property->getValue($object);
+        if (in_array(gettype($value), ['int', 'float', 'string'])) {
+            return $value;
+        }
+
+        // Other stuff will likely fail, but add those as we go.
+        return $value;
+    }
+
+    protected function recordExists(string $table, array $where): bool
+    {
+        $qb = $this->conn->createQueryBuilder();
+        $ands = array_map(static fn($k, $v) => $qb->expr()->eq($k, $v), array_keys($where), array_values($where));
+        $qb->addSelect('1')->from($table);
+        if ($ands) {
+            $qb->where($qb->expr()->and(...$ands));
+        }
+        $result = $qb->executeQuery();
+
+        return (bool)$result->fetchFirstColumn();
+    }
+
+
+    protected function normalizeIds(array $id, string $type, array $keyFields): array
+    {
+        return match (true) {
+            count($id) !== count($keyFields) => throw IdFieldCountMismatch::create($type, count($keyFields), count($id)),
+            count($id) > 1 && $this->array_is_list($id) => throw MultiKeyIdHasNumericKeys::create($type, $id),
+            count($id) === 1 && $this->array_is_list($id) => [$keyFields[0]->field => $id[0]],
+            count($id) > 1 => $id,
+        };
     }
 
     // @todo Polyfill. This function is in PHP 8.1. Remove when updating.

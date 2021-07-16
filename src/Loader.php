@@ -26,16 +26,20 @@ class Loader
         $keyFields = $this->fieldValueMap($tableDef->getIdFields(), $object);
         $insert = $this->fieldValueMap($tableDef->getValueFields(), $object);
 
+        $insertTypes = array_map(static fn(Field $f): string => $f->type, $tableDef->getValueFields());
+        $keyFieldTypes = array_map(static fn(Field $f): string => $f->type, $tableDef->getIdFields());
+
         // There is no good cross-DB way to do this, so we do it the ugly way.
         // Replace with a less ugly way if possible.
-        $this->conn->transactional(function(Connection $conn) use ($tableDef, $keyFields, $insert, $object) {
+        $this->conn->transactional(function(Connection $conn) use ($tableDef, $keyFields, $keyFieldTypes, $insert, $insertTypes, $object) {
             // If there's no key fields defined for this object, we can't do an existing lookup.
             // It can only be an insert.
             if ($keyFields && $this->recordExists($tableDef->name, $keyFields)) {
-                $conn->update($tableDef->name, $insert, $keyFields);
+                $conn->update($tableDef->name, $insert, $keyFields, $insertTypes);
             } else {
                 $insert += $this->fieldValueMap($tableDef->getIdFields(generated: false), $object);
-                $conn->insert($tableDef->name, $insert);
+                $insertTypes += [...$insertTypes, ...$keyFieldTypes];
+                $conn->insert($tableDef->name, $insert, $insertTypes);
             }
         });
     }
@@ -45,11 +49,30 @@ class Loader
      */
     protected function fieldValueMap(array $fields, object $object): array
     {
+        // This would be much cleaner with PFA and pipes. :-(
+
+        $validFields = array_filter($fields, fn(Field $f) => $f->property->isInitialized($object));
+        $callback = fn(Field $f) => $this->getFieldValue($f, $object);
         $ret = [];
-        foreach ($fields as $field) {
-            $ret[$field->field] = $field->property->isInitialized($object) ? $field->property->getValue($object) : null;
+        foreach ($validFields as $field) {
+            $ret[$field->field] = $callback($field);
         }
-        return array_filter($ret);
+        return $ret;
+    }
+
+    /**
+     * This method is probably wrong. Refactor once we grok Doctrine's type handling better.
+     */
+    protected function getFieldValue(Field $field, object $object): mixed
+    {
+        $value = $field->property->getValue($object);
+        if (in_array(gettype($value), ['int', 'float', 'string'])) {
+            return $value;
+        }
+
+
+        // Other stuff will likely fail, but add those as we go.
+        return $value;
     }
 
     protected function recordExists(string $table, array $where): bool
@@ -125,9 +148,9 @@ class Loader
 
         // Bust into the object to set properties, regardless of their
         // visibility or readonly status.
-        $populate = function($init) {
+        $populate = function($init) use ($fields) {
             foreach ($init as $k => $v) {
-                $this->$k = $v;
+                $this->$k = $fields[$k]->decodeValueFromDb($v);
             }
             return $this;
         };

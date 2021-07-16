@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\Rekodi\Records\Employee;
 use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\OptionalPoint;
 use Crell\Rekodi\Records\Person;
@@ -139,6 +140,25 @@ class SchemaCreatorTest extends TestCase
                     'type' => 'string',
                 ],
             ]
+        ];
+        yield Employee::class => [
+            'class' => Employee::class,
+            'table' => 'Employee',
+            'expectedColumns' => [
+                'id' => [
+                    'type' => 'integer',
+                    'autoincrement' => true,
+                ],
+                'first' => [
+                    'type' => 'string',
+                ],
+                'last' => [
+                    'type' => 'string',
+                ],
+                'hiredate' => [
+                    'type' => 'datetimetz_immutable',
+                ],
+            ],
         ];
     }
 }

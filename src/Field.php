@@ -22,7 +22,9 @@ class Field
     public ?Id $idDef = null;
 
     /**
-     * The SQL (Doctrine) type of this field.
+     * The Doctrine SQL type of this field.
+     *
+     * @see https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/types.html
      */
     public string $type;
 
@@ -45,7 +47,7 @@ class Field
         }
 
         $this->field ??= $property->name;
-        $this->type ??= $this->mapType($property);
+        $this->type ??= $this->getDoctrineType($property);
         $this->default ??= $property->getDefaultValue();
     }
 
@@ -76,7 +78,17 @@ class Field
         return $ret;
     }
 
-    protected function mapType(\ReflectionProperty $property): string
+    public function decodeValueFromDb(int|float|string $value): mixed
+    {
+        $type = $this->getNativeType($this->property);
+        return match ($type) {
+            'int', 'float', 'string' => $value,
+            \DateTime::class => new \DateTime($value),
+            \DateTimeImmutable::class => new \DateTimeImmutable($value),
+        };
+    }
+
+    protected function getNativeType(\ReflectionProperty $property): string
     {
         /** @var \ReflectionType $rType */
         $rType = $property->getType();
@@ -88,9 +100,17 @@ class Field
             throw IntersectionTypesNotSupported::create($property);
         }
 
-        return match ($rType->getName()) {
+        return $rType->getName();
+    }
+
+    protected function getDoctrineType(\ReflectionProperty $property): string
+    {
+        return match ($this->getNativeType($property)) {
             'int' => 'integer',
             'string' => 'string',
+            // Only ever allow storing datetime with TZ data.
+            \DateTime::class => 'datetimetz',
+            \DateTimeImmutable::class => 'datetimetz_immutable',
         };
     }
 }

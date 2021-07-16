@@ -28,9 +28,14 @@ class Table
         $this->rClass = $rClass;
     }
 
+    /**
+     * @param Field[] $fields
+     */
     public function setFields(array $fields): void
     {
-        $this->fields = $fields;
+        foreach ($fields as $field) {
+            $this->fields[$field->property->getName()] = $field;
+        }
     }
 
     /**
@@ -40,9 +45,9 @@ class Table
     public function getIdFields(?bool $generated = null): array
     {
         return match($generated) {
-            true => array_filter($this->fields, static fn(Field $field): bool => $field->isId() && $field->idDef->generate),
-            false => array_filter($this->fields, static fn(Field $field): bool => $field->isId() && !$field->idDef->generate),
-            null => array_filter($this->fields, static fn(Field $field): bool => $field->isId()),
+            true => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId() && $field->idDef->generate)),
+            false => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId() && !$field->idDef->generate)),
+            null => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId())),
         };
     }
 
@@ -51,6 +56,6 @@ class Table
      */
     public function getValueFields(): array
     {
-        return array_filter($this->fields, static fn(Field $field): bool => !$field->isId());
+        return array_values(array_filter($this->fields, static fn(Field $field): bool => !$field->isId()));
     }
 }

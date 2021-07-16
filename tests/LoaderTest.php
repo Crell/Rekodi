@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\Rekodi\Records\Employee;
 use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\Person;
 use Crell\Rekodi\Records\PersonSSN;
 use Crell\Rekodi\Records\Point;
 use Doctrine\DBAL\Connection;
-use \PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\TestCase;
 
 class LoaderTest extends TestCase
 {
@@ -132,6 +133,19 @@ class LoaderTest extends TestCase
                 self::assertEquals(4, $record->scope);
                 self::assertEquals(5, $record->localId);
                 self::assertEquals('beep', $record->data);
+            },
+        ];
+        yield 'Complex object (Employee)' => [
+            'class' => Employee::class,
+            'records' => [
+                new Employee(first: 'Larry', last: 'Garfield', hireDate: new \DateTimeImmutable('2021-01-01')),
+            ],
+            'test' => function(Connection $conn, Loader $loader) {
+                $record = $loader->load(Employee::class, 1);
+                self::assertNotNull($record);
+                self::assertEquals('Larry', $record->first);
+                self::assertEquals('Garfield', $record->last);
+                self::assertEquals(new \DateTimeImmutable('2021-01-01'), $record->hireDate);
             },
         ];
     }

@@ -169,17 +169,17 @@ class LoaderTest extends TestCase
 
         $loader = new Loader($conn);
 
-        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+        $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
-        $record = $loader->load(MultiKey::class, scope: 4, local: 5);
+        $record = $loader->load(MultiKey::class, scope: 4, localId: 5);
 
         self::assertEquals(4, $record->scope);
-        self::assertEquals(5, $record->local);
+        self::assertEquals(5, $record->localId);
         self::assertEquals('beep', $record->data);
 
-        $loader->delete(MultiKey::class, scope: 4, local: 5);
+        $loader->delete(MultiKey::class, scope: 4, localId: 5);
 
-        self::assertNull($loader->load(MultiKey::class, scope: 4, local: 5));
+        self::assertNull($loader->load(MultiKey::class, scope: 4, localId: 5));
     }
 
     /**
@@ -194,7 +194,7 @@ class LoaderTest extends TestCase
 
         $loader = new Loader($conn);
 
-        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+        $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
         $loader->load(MultiKey::class, scope: 4);
     }
@@ -211,7 +211,7 @@ class LoaderTest extends TestCase
 
         $loader = new Loader($conn);
 
-        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+        $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
         $loader->load(MultiKey::class, scope: 4, local: 5, data: 'beep');
     }
@@ -228,7 +228,7 @@ class LoaderTest extends TestCase
 
         $loader = new Loader($conn);
 
-        $loader->save(new MultiKey(scope: 4, local: 5, data: 'beep'));
+        $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
         $loader->load(MultiKey::class, ...[4, 5]);
     }

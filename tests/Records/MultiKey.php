@@ -13,7 +13,7 @@ class MultiKey
 {
     public function __construct(
         #[Id] public int $scope,
-        #[Id] public int $local,
+        #[Id] public int $localId,
         public string $data,
     ) {}
 }

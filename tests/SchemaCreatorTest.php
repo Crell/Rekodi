@@ -52,6 +52,13 @@ class SchemaCreatorTest extends TestCase
         }
     }
 
+    /**
+     *
+     * Note: Doctrine forces all fields to lowercase in the database. This
+     * is a design flaw in Doctrine, frankly, but not something we can fix
+     * here.  As a result, all expectedColumns below are all lower-case.
+     * Loading into a mixed-case property will still work.
+     */
     public function tableCreationProvider(): iterable
     {
         yield Point::class => [
@@ -125,7 +132,7 @@ class SchemaCreatorTest extends TestCase
                 'scope' => [
                     'type' => 'integer',
                 ],
-                'local' => [
+                'localid' => [
                     'type' => 'integer',
                 ],
                 'data' => [

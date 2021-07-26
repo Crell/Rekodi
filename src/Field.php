@@ -6,6 +6,7 @@ namespace Crell\Rekodi;
 
 use Attribute;
 use Crell\AttributeUtils\FromReflectionProperty;
+use Crell\AttributeUtils\GetAttribute;
 
 /**
  * @internal
@@ -17,7 +18,7 @@ use Crell\AttributeUtils\FromReflectionProperty;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class Field implements FromReflectionProperty
 {
-    use AttributeUtil;
+    use GetAttribute;
 
     /* readonly */ public bool $isId;
 

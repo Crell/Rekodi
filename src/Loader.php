@@ -10,8 +10,6 @@ use Doctrine\DBAL\Result;
 
 class Loader
 {
-    use AttributeUtil;
-
     public function __construct(
         protected Connection $conn,
         protected ClassAnalyzer $analyzer,

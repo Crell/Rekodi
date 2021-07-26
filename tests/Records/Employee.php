@@ -26,7 +26,7 @@ class Employee
     use Evolvable;
 
     // To test skippable fields.
-    #[Field(skip: true)]
+    #[Field(exclude: true)]
     public string $fullName;
 
     #[Id(generate: true)]

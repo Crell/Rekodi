@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\AttributeUtils\Analyzer;
 use Crell\Rekodi\Records\Employee;
 use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\Person;
@@ -31,7 +32,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass($class);
 
-        $loader = new Loader($conn);
+        $loader = new Loader($conn, new Analyzer());
 
         foreach ($records as $record) {
             $loader->save($record);
@@ -165,7 +166,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass($class);
 
-        $loader = new Loader($conn);
+        $loader = new Loader($conn, new Analyzer());
 
         foreach ($records as $record) {
             $loader->save($record);
@@ -225,7 +226,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass(MultiKey::class);
 
-        $loader = new Loader($conn);
+        $loader = new Loader($conn, new Analyzer());
 
         $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
@@ -242,7 +243,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass(MultiKey::class);
 
-        $loader = new Loader($conn);
+        $loader = new Loader($conn, new Analyzer());
 
         $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
@@ -259,7 +260,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass(MultiKey::class);
 
-        $loader = new Loader($conn);
+        $loader = new Loader($conn, new Analyzer());
 
         $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
@@ -270,7 +271,7 @@ class LoaderTest extends TestCase
     {
         $conn = $this->getConnection();
         // Make the table.
-        $schema = new SchemaCreator($conn);
+        $schema = new SchemaCreator($conn, new Analyzer());
         $table = $schema->createSchemaDefinition($class);
         $conn->createSchemaManager()->createTable($table);
     }

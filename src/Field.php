@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Attribute;
+use Crell\AttributeUtils\FromReflectionProperty;
 
 /**
  * @internal
@@ -14,51 +15,53 @@ use Attribute;
  * cf: https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/schema-representation.html#portable-options
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class Field
+class Field implements FromReflectionProperty
 {
-    public \ReflectionProperty $property;
+    use AttributeUtil;
 
-    // Nullable so that nullsafe property calls work.
-    public ?Id $idDef = null;
+    /* readonly */ public bool $isId;
+
+    /* readonly */ public bool $isGeneratedId;
 
     /**
      * The Doctrine SQL type of this field.
      *
      * @see https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/types.html
      */
-    public string $type;
+    public string $doctrineType;
+
+    /**
+     * The native PHP type, as the reflection system defines it.
+     */
+    public string $phpType;
+
+    /**
+     * The name of the property in PHP. ($field is the name of the DB field.)
+     */
+    public string $name;
 
     public function __construct(
+        // $field is the name of the field in the DB.
         public ?string $field = null,
-        public bool $skip = false,
+        public bool $exclude = false,
         public mixed $default = null,
         public ?int $length = null,
         public ?bool $unsigned = null,
     ) {}
 
-    // I don't love this function; it's not very functional. But I'm not sure
-    // what the better alternative is other than just returning a new object.
-    public function setProperty(\ReflectionProperty $property): void
+    public function fromReflection(\ReflectionProperty $subject): void
     {
-        $this->property = $property;
+        $this->name = $subject->name;
+        $this->phpType ??= $this->getNativeType($subject);
+        $this->doctrineType ??= $this->getDoctrineType($this->phpType);
+        $this->field ??= $subject->name;
+        $this->default ??= $subject->getDefaultValue();
 
-        if ($this->skip) {
-            return;
-        }
-
-        $this->field ??= $property->name;
-        $this->type ??= $this->getDoctrineType();
-        $this->default ??= $property->getDefaultValue();
-    }
-
-    public function setId(Id $idDef): void
-    {
-        $this->idDef = $idDef;
-    }
-
-    public function isId(): bool
-    {
-        return isset($this->idDef);
+        // @todo Make multiple attributes easier to handle cleaner.
+        // Maybe change Id to be a sub-property of Field instead, in PHP 8.1?
+        $idRef = $this->getAttribute($subject, Id::class);
+        $this->isId = isset($idRef);
+        $this->isGeneratedId = $this->isId && $idRef?->generate;
     }
 
     /**
@@ -72,7 +75,7 @@ class Field
                 $ret[$key] = $this->$key;
             }
         }
-        if ($this->idDef?->generate) {
+        if ($this->isGeneratedId) {
             $ret['autoincrement'] = true;
         }
         return $ret;
@@ -80,30 +83,27 @@ class Field
 
     public function decodeValueFromDb(int|float|string $value): mixed
     {
-        return match ($this->getNativeType()) {
+        return match ($this->phpType) {
             'int', 'float', 'string' => $value,
             'array' => json_decode($value, true, 512, \JSON_THROW_ON_ERROR),
             \DateTime::class => new \DateTime($value),
             \DateTimeImmutable::class => new \DateTimeImmutable($value),
-            // @todo Need a test case for this.
-            'resource' => throw ResourcePropertiesNotAllowed::create($this->property->getName()),
         };
     }
 
-    protected function getNativeType(): string
+    protected function getNativeType(\ReflectionProperty $property): string
     {
-        /** @var \ReflectionType $rType */
-        $rType = $this->property->getType();
+        $rType = $property->getType();
         return match(true) {
-            $rType instanceof \ReflectionUnionType => throw UnionTypesNotSupported::create($this->property),
-            $rType instanceof \ReflectionIntersectionType => throw IntersectionTypesNotSupported::create($this->property),
+            $rType instanceof \ReflectionUnionType => throw UnionTypesNotSupported::create($property),
+            $rType instanceof \ReflectionIntersectionType => throw IntersectionTypesNotSupported::create($property),
             $rType instanceof \ReflectionNamedType => $rType->getName(),
         };
     }
 
-    protected function getDoctrineType(): string
+    protected function getDoctrineType(string $phpType): string
     {
-        return match ($this->getNativeType()) {
+        return match ($phpType) {
             'int' => 'integer',
             'string' => 'string',
             // Only ever allow storing datetime with TZ data.
@@ -111,7 +111,7 @@ class Field
             \DateTimeImmutable::class => 'datetimetz_immutable',
             'array' => 'json',
             // @todo Need a test case for this.
-            'resource' => throw ResourcePropertiesNotAllowed::create($this->property->getName()),
+            'resource' => throw ResourcePropertiesNotAllowed::create('Fix this string'),
         };
     }
 }

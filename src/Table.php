@@ -5,37 +5,45 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Attribute;
+use Crell\AttributeUtils\FromReflectionClass;
+use Crell\AttributeUtils\ParseProperties;
 
 /**
  * @internal
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-class Table
+class Table implements FromReflectionClass, ParseProperties
 {
     /**
      * @var Field[]
      */
-    public array $fields;
+    /* readonly */ public array $fields;
 
-    public \ReflectionClass $rClass;
+    /* readonly */ public string $className;
 
     public function __construct(
         public ?string $name = null,
     ) {}
 
-    public function setReflection(\ReflectionClass $rClass): void
+    public function fromReflection(\ReflectionClass $subject): void
     {
-        $this->rClass = $rClass;
+        $this->name ??= $subject->getShortName();
+        $this->className ??= $subject->getName();
     }
 
-    /**
-     * @param Field[] $fields
-     */
-    public function setFields(array $fields): void
+    public function setProperties(array $properties): void
     {
-        foreach ($fields as $field) {
-            $this->fields[$field->property->getName()] = $field;
-        }
+        $this->fields = $properties;
+    }
+
+    public function includeByDefault(): bool
+    {
+        return true;
+    }
+
+    public static function propertyAttribute(): string
+    {
+        return Field::class;
     }
 
     /**
@@ -45,9 +53,9 @@ class Table
     public function getIdFields(?bool $generated = null): array
     {
         return match($generated) {
-            true => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId() && $field->idDef->generate)),
-            false => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId() && !$field->idDef->generate)),
-            null => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId())),
+            true => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId && $field->isGeneratedId)),
+            false => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId && !$field->isGeneratedId)),
+            null => array_values(array_filter($this->fields, static fn(Field $field): bool => $field->isId)),
         };
     }
 
@@ -56,6 +64,6 @@ class Table
      */
     public function getValueFields(): array
     {
-        return array_values(array_filter($this->fields, static fn(Field $field): bool => !$field->isId()));
+        return array_values(array_filter($this->fields, static fn(Field $field): bool => !$field->isId));
     }
 }

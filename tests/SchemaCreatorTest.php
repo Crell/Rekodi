@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\AttributeUtils\Analyzer;
 use Crell\Rekodi\Records\Employee;
 use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\OptionalPoint;
@@ -30,7 +31,7 @@ class SchemaCreatorTest extends TestCase
     {
         $conn = $this->getConnection();
 
-        $subject = new SchemaCreator($conn);
+        $subject = new SchemaCreator($conn, new Analyzer());
         $table = $subject->createSchemaDefinition($class);
 
         $schemaManager = $conn ->createSchemaManager();

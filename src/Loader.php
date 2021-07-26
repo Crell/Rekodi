@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi;
 
+use Crell\AttributeUtils\ClassAnalyzer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result;
 
@@ -13,6 +14,7 @@ class Loader
 
     public function __construct(
         protected Connection $conn,
+        protected ClassAnalyzer $analyzer,
     ) {}
 
     /**
@@ -20,14 +22,14 @@ class Loader
      */
     public function save(object $object): void
     {
-        $tableDef = $this->tableDefinition($object::class);
+        $tableDef = $this->analyzer->analyze($object, Table::class);
 
         // We need the key field list separate from the non-key-field, so build them separately.
         $keyFields = $this->buildFieldValueMap($tableDef->getIdFields(), $object);
         $insert = $this->buildFieldValueMap($tableDef->getValueFields(), $object);
 
-        $insertTypes = array_map(static fn(Field $f): string => $f->type, $tableDef->getValueFields());
-        $keyFieldTypes = array_map(static fn(Field $f): string => $f->type, $tableDef->getIdFields());
+        $insertTypes = array_map(static fn(Field $f): string => $f->doctrineType, $tableDef->getValueFields());
+        $keyFieldTypes = array_map(static fn(Field $f): string => $f->doctrineType, $tableDef->getIdFields());
 
         // There is no good cross-DB way to do this, so we do it the ugly way.
         // Replace with a less ugly way if possible.
@@ -64,7 +66,7 @@ class Loader
      */
     public function load(string $type, int|float|string ...$id): ?object
     {
-        $tableDef = $this->tableDefinition($type);
+        $tableDef = $this->analyzer->analyze($type, Table::class);
 
         $keyFields = $tableDef->getIdFields();
         $valueFields = $tableDef->getValueFields();
@@ -106,7 +108,7 @@ class Loader
      */
     public function delete(string $type, int|float|string ...$id): void
     {
-        $tableDef = $this->tableDefinition($type);
+        $tableDef = $this->analyzer->analyze($type, Table::class);
 
         $ids = $this->normalizeIds($id, $type, $tableDef->getIdFields());
 
@@ -122,7 +124,7 @@ class Loader
 
     public function loadRecords(string $class, Result $result): iterable
     {
-        $tableDef = $this->tableDefinition($class);
+        $tableDef = $this->analyzer->analyze($class, Table::class);
         $fields = $tableDef->fields;
 
         // Bust into the object to set properties, regardless of their
@@ -139,43 +141,36 @@ class Loader
             // an associative array. Maybe this should get factored out.
             // @see https://www.danielauener.com/howto-use-array_map-on-associative-arrays-to-change-values-and-keys/
             $init = array_reduce($fields, static function (array $init, Field $field) use ($record) {
-                $init[$field->property->name] = $record[$field->field];
+                $init[$field->name] = $record[$field->field];
                 return $init;
             }, []);
 
-            $new = $tableDef->rClass->newInstanceWithoutConstructor();
+            $new = (new \ReflectionClass($tableDef->className))->newInstanceWithoutConstructor();
             yield $populate->bindTo($new, $new)($init);
         }
     }
 
     /**
      * @param Field[] $fields
+     *
+     * @todo This method is probably wrong. Refactor once we grok Doctrine's type handling better.
      */
     protected function buildFieldValueMap(array $fields, object $object): array
     {
-        // This would be much cleaner with PFA and pipes. :-(
+        // @todo I'm not sure how to make this nicely functional, since $rProp would
+        // be needed in both the map and the filter portion.
+        $rObject = new \ReflectionObject($object);
 
-        $validFields = array_filter($fields, fn(Field $f) => $f->property->isInitialized($object));
-        $callback = fn(Field $f) => $this->getFieldValue($f, $object);
         $ret = [];
-        foreach ($validFields as $field) {
-            $ret[$field->field] = $callback($field);
+        foreach ($fields as $field) {
+            $rProp = $rObject->getProperty($field->name);
+            if (! $rProp->isInitialized($object)) {
+                continue;
+            }
+            $value = $rProp->getValue($object);
+            $ret[$field->field] = $value;
         }
         return $ret;
-    }
-
-    /**
-     * @todo This method is probably wrong. Refactor once we grok Doctrine's type handling better.
-     */
-    protected function getFieldValue(Field $field, object $object): mixed
-    {
-        $value = $field->property->getValue($object);
-        if (in_array(gettype($value), ['int', 'float', 'string'])) {
-            return $value;
-        }
-
-        // Other stuff will likely fail, but add those as we go.
-        return $value;
     }
 
     protected function recordExists(string $table, array $where): bool

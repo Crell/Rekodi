@@ -5,7 +5,7 @@ CMD [ "vendor/bin/wait-for-it.sh", "db:3306", "--", "vendor/bin/phpunit" ]
 #CMD [ "ls", "-alF" ]
 #CMD ["pwd"]
 
-#RUN pecl install xdebug \
-#    && docker-php-ext-install pdo_mysql
+RUN pecl install xdebug \
+    && docker-php-ext-install pdo_mysql
 
-RUN docker-php-ext-install pdo_mysql
+#RUN docker-php-ext-install pdo_mysql

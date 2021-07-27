@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Crell\AttributeUtils\Analyzer;
+use Crell\Rekodi\Records\AllFieldTypes;
 use Crell\Rekodi\Records\Employee;
 use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\OptionalPoint;
@@ -162,6 +163,33 @@ class SchemaCreatorTest extends TestCase
                 'tags' => [
                     'type' => 'json',
                 ]
+            ],
+        ];
+        yield AllFieldTypes::class => [
+            'class' => AllFieldTypes::class,
+            'table' => 'AllFieldTypes',
+            'expectedColumns' => [
+                'anint' => [
+                    'type' => 'integer',
+                ],
+                'string' => [
+                    'type' => 'string',
+                ],
+                'afloat' => [
+                    'type' => 'float',
+                ],
+//                'datetime' => [
+//                    'type' => 'datetimetz',
+//                ],
+                'datetimeimmutable' => [
+                    'type' => 'datetimetz_immutable',
+                ],
+                'simplearray' => [
+                    'type' => 'json',
+                ],
+                'assocarray' => [
+                    'type' => 'json',
+                ],
             ],
         ];
     }

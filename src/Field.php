@@ -107,6 +107,7 @@ class Field implements FromReflectionProperty
         return match ($phpType) {
             'int' => 'integer',
             'string' => 'string',
+            'float' => 'float',
             // Only ever allow storing datetime with TZ data.
             \DateTime::class => 'datetimetz',
             \DateTimeImmutable::class => 'datetimetz_immutable',

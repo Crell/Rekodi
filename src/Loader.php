@@ -19,6 +19,10 @@ class Loader
 
     /**
      * @todo This should return something useful. Not sure what yet.
+     *
+     * @todo This relies on Doctrine calling json_encode() on any object
+     * fields. That nominally works, but we need to pre-serialize with Serde
+     * ourselves instead so that it is symmetric with the load process.
      */
     public function save(object $object): void
     {

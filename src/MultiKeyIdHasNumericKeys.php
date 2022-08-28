@@ -6,11 +6,8 @@ namespace Crell\Rekodi;
 
 class MultiKeyIdHasNumericKeys extends \InvalidArgumentException
 {
-    // @todo Make readonly.
-    public string $table;
-
-    // @todo Make readonly.
-    public array $ids;
+    public readonly string $table;
+    public readonly array $ids;
 
     public static function create(string $table, array $ids): static
     {

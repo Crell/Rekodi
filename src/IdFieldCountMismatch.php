@@ -6,10 +6,9 @@ namespace Crell\Rekodi;
 
 class IdFieldCountMismatch extends \InvalidArgumentException
 {
-    // @todo Make readonly.
-    public string $table;
-    public int $expectedNumber;
-    public int $providedNumber;
+    public readonly string $table;
+    public readonly int $expectedNumber;
+    public readonly int $providedNumber;
 
     public static function create(string $table, int $expectedNumber, int $providedNumber): static
     {

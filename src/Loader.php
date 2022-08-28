@@ -12,9 +12,9 @@ use Doctrine\DBAL\Result;
 class Loader
 {
     public function __construct(
-        protected Connection $conn,
-        protected ClassAnalyzer $analyzer,
-        protected Serde $serde,
+        protected readonly Connection $conn,
+        protected readonly ClassAnalyzer $analyzer,
+        protected readonly Serde $serde,
     ) {}
 
     /**
@@ -211,19 +211,9 @@ class Loader
     {
         return match (true) {
             count($id) !== count($keyFields) => throw IdFieldCountMismatch::create($type, count($keyFields), count($id)),
-            count($id) > 1 && $this->array_is_list($id) => throw MultiKeyIdHasNumericKeys::create($type, $id),
-            count($id) === 1 && $this->array_is_list($id) => [$keyFields[0]->field => $id[0]],
+            count($id) > 1 && array_is_list($id) => throw MultiKeyIdHasNumericKeys::create($type, $id),
+            count($id) === 1 && array_is_list($id) => [$keyFields[0]->field => $id[0]],
             count($id) > 1 => $id,
         };
-    }
-
-    // @todo Polyfill. This function is in PHP 8.1. Remove when updating.
-    private function array_is_list(array $array): bool {
-        $expectedKey = 0;
-        foreach ($array as $i => $_) {
-            if ($i !== $expectedKey) { return false; }
-            $expectedKey++;
-        }
-        return true;
     }
 }

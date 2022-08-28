@@ -28,26 +28,37 @@ class Field implements FromReflectionProperty, HasSubAttributes, Excludable
      *
      * @see https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/types.html
      */
-    public string $doctrineType;
+    public readonly string $doctrineType;
 
     /**
      * The native PHP type, as the reflection system defines it.
      */
-    public string $phpType;
+    public readonly string $phpType;
 
     /**
      * The name of the property in PHP. ($field is the name of the DB field.)
      */
-    public string $name;
+    public readonly string $name;
+
+    public readonly ?string $field;
+
+    public readonly mixed $default;
 
     public function __construct(
         // $field is the name of the field in the DB.
-        public ?string $field = null,
-        private bool $exclude = false,
-        public mixed $default = null,
-        public ?int $length = null,
-        public ?bool $unsigned = null,
-    ) {}
+        ?string $field = null,
+        private readonly bool $exclude = false,
+        mixed $default = null,
+        public readonly ?int $length = null,
+        public readonly ?bool $unsigned = null,
+    ) {
+        if ($field) {
+            $this->field = $field;
+        }
+        if ($default) {
+            $this->default = $default;
+        }
+    }
 
     public function exclude(): bool
     {

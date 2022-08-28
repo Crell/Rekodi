@@ -11,7 +11,10 @@ use Doctrine\DBAL\Schema\Table as DoctrineTable;
 
 class SchemaCreator
 {
-    public function __construct(protected Connection $conn, protected ClassAnalyzer $analyzer) {}
+    public function __construct(
+        protected readonly Connection $conn,
+        protected ClassAnalyzer $analyzer,
+    ) {}
 
     public function createSchemaDefinition(string $className): DoctrineTable
     {

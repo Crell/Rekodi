@@ -17,13 +17,19 @@ class Table implements FromReflectionClass, ParseProperties
     /**
      * @var Field[]
      */
-    /* readonly */ public array $fields;
+    public readonly array $fields;
 
-    /* readonly */ public string $className;
+    public readonly string $className;
+
+    public readonly ?string $name;
 
     public function __construct(
-        public ?string $name = null,
-    ) {}
+        ?string $name = null,
+    ) {
+        if ($name) {
+            $this->name = $name;
+        }
+    }
 
     public function fromReflection(\ReflectionClass $subject): void
     {

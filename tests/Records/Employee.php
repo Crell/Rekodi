@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Crell\Rekodi\Records;
 
-use Crell\Rekodi\Evolvable;
+use Crell\fp\Evolvable;
 use Crell\Rekodi\Field;
 use Crell\Rekodi\Id;
 

@@ -28,6 +28,7 @@
     ],
     "require": {
         "php": "~8.0",
+        "crell/serde": "^0.5.0",
         "doctrine/dbal": "^3.1"
     },
     "require-dev": {

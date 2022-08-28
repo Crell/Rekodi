@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Crell\AttributeUtils\Analyzer;
+use Crell\Rekodi\Records\AllFieldTypes;
 use Crell\Rekodi\Records\Employee;
 use Crell\Rekodi\Records\MultiKey;
 use Crell\Rekodi\Records\Person;
 use Crell\Rekodi\Records\PersonSSN;
 use Crell\Rekodi\Records\Point;
+use Crell\Serde\SerdeCommon;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\TestCase;
 
@@ -32,7 +34,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass($class);
 
-        $loader = new Loader($conn, new Analyzer());
+        $loader = new Loader($conn, new Analyzer(), new SerdeCommon());
 
         foreach ($records as $record) {
             $loader->save($record);
@@ -155,6 +157,33 @@ class LoaderTest extends TestCase
                 self::assertEquals(new \DateTimeImmutable('2021-01-01'), $record->hireDate);
             },
         ];
+        yield 'All fields roundtrip' => [
+            'class' => AllFieldTypes::class,
+            'records' => [
+                new AllFieldTypes(
+                    anint: 5,
+                    string: 'beep',
+                    afloat: 12.5,
+                    dateTimeImmutable: new \DateTimeImmutable('2021-02-14'),
+                    simpleArray: [1, 2, 3],
+                    assocArray: ['a' => 'A', 'b' => 'B'],
+                    simpleObject: new Point(3, 4, z: 5),
+                ),
+            ],
+            'test' => function(Connection $conn, Loader $loader) {
+                $result = $conn->executeQuery("SELECT * FROM AllFieldTypes WHERE anint=?", [5]);
+                /** @var AllFieldTypes $record */
+                $record = iterator_to_array($loader->loadRecords(AllFieldTypes::class, $result))[0];
+                self::assertNotNull($record);
+                self::assertEquals(5, $record->anint);
+                self::assertEquals('beep', $record->string);
+                self::assertEquals(12.5, $record->afloat);
+                self::assertEquals(new \DateTimeImmutable('2021-02-14'), $record->dateTimeImmutable);
+                self::assertEquals([1, 2, 3], $record->simpleArray);
+                self::assertEquals(['a' => 'A', 'b' => 'B'], $record->assocArray);
+                self::assertEquals(new Point(3, 4, z: 5), $record->simpleObject);
+            },
+        ];
     }
 
     /**
@@ -166,7 +195,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass($class);
 
-        $loader = new Loader($conn, new Analyzer());
+        $loader = new Loader($conn, new Analyzer(), new SerdeCommon());
 
         foreach ($records as $record) {
             $loader->save($record);
@@ -226,7 +255,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass(MultiKey::class);
 
-        $loader = new Loader($conn, new Analyzer());
+        $loader = new Loader($conn, new Analyzer(), new SerdeCommon());
 
         $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
@@ -243,7 +272,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass(MultiKey::class);
 
-        $loader = new Loader($conn, new Analyzer());
+        $loader = new Loader($conn, new Analyzer(), new SerdeCommon());
 
         $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 
@@ -260,7 +289,7 @@ class LoaderTest extends TestCase
         $conn = $this->getConnection();
         $this->ensureTableClass(MultiKey::class);
 
-        $loader = new Loader($conn, new Analyzer());
+        $loader = new Loader($conn, new Analyzer(), new SerdeCommon());
 
         $loader->save(new MultiKey(scope: 4, localId: 5, data: 'beep'));
 

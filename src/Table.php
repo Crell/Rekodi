@@ -36,12 +36,12 @@ class Table implements FromReflectionClass, ParseProperties
         $this->fields = $properties;
     }
 
-    public function includeByDefault(): bool
+    public function includePropertiesByDefault(): bool
     {
         return true;
     }
 
-    public static function propertyAttribute(): string
+    public function propertyAttribute(): string
     {
         return Field::class;
     }

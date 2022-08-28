@@ -190,6 +190,9 @@ class SchemaCreatorTest extends TestCase
                 'assocarray' => [
                     'type' => 'json',
                 ],
+                'simpleobject' => [
+                    'type' => 'json',
+                ],
             ],
         ];
     }

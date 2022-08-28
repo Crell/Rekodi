@@ -91,16 +91,6 @@ class Field implements FromReflectionProperty, HasSubAttributes, Excludable
         return $ret;
     }
 
-    public function decodeValueFromDb(int|float|string $value): mixed
-    {
-        return match ($this->phpType) {
-            'int', 'float', 'string' => $value,
-            'array' => json_decode($value, true, 512, \JSON_THROW_ON_ERROR),
-            \DateTime::class => new \DateTime($value),
-            \DateTimeImmutable::class => new \DateTimeImmutable($value),
-        };
-    }
-
     protected function getNativeType(\ReflectionProperty $property): string
     {
         $rType = $property->getType();
@@ -123,6 +113,7 @@ class Field implements FromReflectionProperty, HasSubAttributes, Excludable
             'array' => 'json',
             // @todo Need a test case for this.
             'resource' => throw ResourcePropertiesNotAllowed::create('Fix this string'),
+            default => 'json',
         };
     }
 }

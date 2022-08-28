@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Crell\AttributeUtils\ClassAnalyzer;
+use Crell\Serde\Serde;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Result;
 
@@ -13,6 +14,7 @@ class Loader
     public function __construct(
         protected Connection $conn,
         protected ClassAnalyzer $analyzer,
+        protected Serde $serde,
     ) {}
 
     /**
@@ -125,11 +127,13 @@ class Loader
         $tableDef = $this->analyzer->analyze($class, Table::class);
         $fields = $tableDef->fields;
 
+        $decoder = $this->decodeValueFromDb(...);
+
         // Bust into the object to set properties, regardless of their
         // visibility or readonly status.
-        $populate = function($init) use ($fields) {
+        $populate = function($init) use ($fields, $decoder) {
             foreach ($init as $k => $v) {
-                $this->$k = $fields[$k]->decodeValueFromDb($v);
+                $this->$k = $decoder($v, $fields[$k]);
             }
             return $this;
         };
@@ -146,6 +150,20 @@ class Loader
             $new = (new \ReflectionClass($tableDef->className))->newInstanceWithoutConstructor();
             yield $populate->bindTo($new, $new)($init);
         }
+    }
+
+    private function decodeValueFromDb(int|float|string $value, Field $field): mixed
+    {
+        return match ($field->doctrineType) {
+            'integer', 'float', 'string' => $value,
+            'array' => json_decode($value, true, 512, \JSON_THROW_ON_ERROR),
+            'datetimetz' => new \DateTime($value),
+            'datetimetz_immutable' => new \DateTimeImmutable($value),
+            'object', 'json' =>
+                class_exists($field->phpType) || interface_exists($field->phpType)
+                ? $this->serde->deserialize($value, from: 'json', to: $field->phpType)
+                : json_decode($value, true, 512, \JSON_THROW_ON_ERROR),
+        };
     }
 
     /**

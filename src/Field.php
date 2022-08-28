@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Crell\Rekodi;
 
 use Attribute;
+use Crell\AttributeUtils\Excludable;
 use Crell\AttributeUtils\FromReflectionProperty;
-use Crell\AttributeUtils\GetAttribute;
+use Crell\AttributeUtils\HasSubAttributes;
 
 /**
  * @internal
@@ -16,10 +17,8 @@ use Crell\AttributeUtils\GetAttribute;
  * cf: https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/schema-representation.html#portable-options
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class Field implements FromReflectionProperty
+class Field implements FromReflectionProperty, HasSubAttributes, Excludable
 {
-    use GetAttribute;
-
     /* readonly */ public bool $isId;
 
     /* readonly */ public bool $isGeneratedId;
@@ -44,11 +43,16 @@ class Field implements FromReflectionProperty
     public function __construct(
         // $field is the name of the field in the DB.
         public ?string $field = null,
-        public bool $exclude = false,
+        private bool $exclude = false,
         public mixed $default = null,
         public ?int $length = null,
         public ?bool $unsigned = null,
     ) {}
+
+    public function exclude(): bool
+    {
+        return $this->exclude;
+    }
 
     public function fromReflection(\ReflectionProperty $subject): void
     {
@@ -57,12 +61,17 @@ class Field implements FromReflectionProperty
         $this->doctrineType ??= $this->getDoctrineType($this->phpType);
         $this->field ??= $subject->name;
         $this->default ??= $subject->getDefaultValue();
+    }
 
-        // @todo Make multiple attributes easier to handle cleaner.
-        // Maybe change Id to be a sub-property of Field instead, in PHP 8.1?
-        $idRef = $this->getAttribute($subject, Id::class);
-        $this->isId = isset($idRef);
-        $this->isGeneratedId = $this->isId && $idRef?->generate;
+    public function subAttributes(): array
+    {
+        return [Id::class => 'fromId'];
+    }
+
+    public function fromId(?Id $id = null): void
+    {
+        $this->isId = isset($id);
+        $this->isGeneratedId = $id?->generate ?? false;
     }
 
     /**
